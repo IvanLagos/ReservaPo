@@ -2,22 +2,13 @@ import pg from "pg";
 
 const { Pool } = pg;
 
-export const pool =
-    new Pool({
+export const pool = new Pool({
 
-        user:
-            process.env.DB_USER,
+    connectionString:
+        process.env.DATABASE_URL,
 
-        host:
-            process.env.DB_HOST,
+    ssl: {
+        rejectUnauthorized: false,
+    },
 
-        database:
-            process.env.DB_NAME,
-
-        password:
-            process.env.DB_PASSWORD,
-
-        port:
-            process.env.DB_PORT,
-
-    });
+});
