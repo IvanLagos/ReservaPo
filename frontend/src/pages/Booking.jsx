@@ -8,9 +8,6 @@ import {
 
 import Navbar from "../components/Navbar";
 
-import { useAuth }
-from "../context/AuthContext";
-
 const API_URL =
   "https://reservapo.onrender.com";
 
@@ -22,8 +19,6 @@ function Booking() {
     businessId,
     serviceIndex,
   } = useParams();
-
-  const { token } = useAuth();
 
   const [business, setBusiness] =
     useState(null);
@@ -58,9 +53,6 @@ function Booking() {
   const [successMessage, setSuccessMessage] =
     useState("");
 
-  const fallbackImage =
-    "https://images.unsplash.com/photo-1503951914875-452162b0f3f1";
-
   const dates = [
     "2026-05-24",
     "2026-05-25",
@@ -87,6 +79,7 @@ function Booking() {
     "19:15",
   ];
 
+  // LOAD BUSINESS
   useEffect(() => {
 
     async function loadBusiness() {
@@ -100,16 +93,17 @@ function Booking() {
             `${API_URL}/businesses`
           );
 
+        const data =
+          await response.json();
+
         if (!response.ok) {
 
           throw new Error(
+            data.error ||
             "No se pudo cargar el negocio"
           );
 
         }
-
-        const data =
-          await response.json();
 
         const businesses =
           data.businesses || [];
@@ -164,7 +158,7 @@ function Booking() {
 
   }, [businessId, serviceIndex]);
 
-  // PROFESIONALES
+  // LOAD PROFESSIONALS
   useEffect(() => {
 
     async function loadProfessionals() {
@@ -214,7 +208,7 @@ function Booking() {
 
   }, [businessId]);
 
-  // HORAS OCUPADAS
+  // LOAD OCCUPIED HOURS
   useEffect(() => {
 
     async function loadOccupiedHours() {
@@ -274,6 +268,7 @@ function Booking() {
 
   };
 
+  // CREATE RESERVATION
   const handleReservation =
     async () => {
 
@@ -285,13 +280,12 @@ function Booking() {
 
         setSuccessMessage("");
 
-        const storedToken =
-          token ||
+        const token =
           localStorage.getItem(
             "token"
           );
 
-        if (!storedToken) {
+        if (!token) {
 
           navigate("/login");
 
@@ -312,7 +306,7 @@ function Booking() {
                   "application/json",
 
                 Authorization:
-                  `Bearer ${storedToken}`,
+                  `Bearer ${token}`,
 
               },
 
@@ -406,7 +400,7 @@ function Booking() {
 
   return (
 
-    <div className="bg-black min-h-screen text-white overflow-hidden relative isolate">
+    <div className="bg-black min-h-screen text-white overflow-hidden">
 
       {errorMessage && (
 
@@ -430,7 +424,7 @@ function Booking() {
 
       <Navbar />
 
-      <section className="pt-36 px-6 pb-20 relative z-10">
+      <section className="pt-36 px-6 pb-20">
 
         <div className="max-w-4xl mx-auto">
 
@@ -450,6 +444,8 @@ function Booking() {
               Nueva reserva
 
             </h1>
+
+            {/* PROFESSIONALS */}
 
             <div className="mt-10">
 
@@ -490,6 +486,8 @@ function Booking() {
 
             </div>
 
+            {/* DATES */}
+
             <div className="mt-10">
 
               <h3 className="text-zinc-400 uppercase text-sm tracking-widest">
@@ -523,6 +521,8 @@ function Booking() {
               </div>
 
             </div>
+
+            {/* HOURS */}
 
             <div className="mt-10">
 

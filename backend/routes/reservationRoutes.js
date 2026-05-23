@@ -1,3 +1,6 @@
+import { pool }
+from "../consultas.js";
+
 import express
 from "express";
 

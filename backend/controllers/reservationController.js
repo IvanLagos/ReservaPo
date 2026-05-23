@@ -21,7 +21,6 @@ export const createReservation =
 
             } = req.body;
 
-            // VALIDATION
             if (
 
                 !business_id ||
@@ -47,7 +46,50 @@ export const createReservation =
 
             }
 
-            // INSERT
+            // VALIDAR HORA OCUPADA
+            const existingReservation =
+                await pool.query(
+
+                    `
+                    SELECT id
+                    FROM reservations
+                    WHERE business_id = $1
+                    AND professional_id = $2
+                    AND reservation_date = $3
+                    AND reservation_time = $4
+                    AND status != 'cancelled'
+                    LIMIT 1
+                    `,
+
+                    [
+
+                        business_id,
+
+                        professional_id,
+
+                        reservation_date,
+
+                        reservation_time,
+
+                    ]
+
+                );
+
+            if (
+                existingReservation.rows.length > 0
+            ) {
+
+                return res
+                    .status(409)
+                    .json({
+
+                        error:
+                            "Esta hora ya fue reservada",
+
+                    });
+
+            }
+
             const result =
                 await pool.query(
 
@@ -202,7 +244,6 @@ export const updateReservation =
 
             } = req.body;
 
-            // CHECK OWNER
             const reservation =
                 await pool.query(
 
@@ -235,7 +276,6 @@ export const updateReservation =
 
             }
 
-            // UPDATE
             const result =
                 await pool.query(
 
@@ -299,7 +339,6 @@ export const deleteReservation =
             const { id } =
                 req.params;
 
-            // CHECK OWNER
             const reservation =
                 await pool.query(
 
@@ -332,7 +371,6 @@ export const deleteReservation =
 
             }
 
-            // DELETE
             await pool.query(
 
                 `
