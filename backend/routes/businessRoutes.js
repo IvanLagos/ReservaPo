@@ -1,71 +1,108 @@
-import express
-from "express";
+import express from "express";
+
+import { pool }
+from "../consultas.js";
 
 import {
-
-    createBusiness,
-
-    getBusinesses,
-
-    updateBusiness,
-
-    deleteBusiness,
-
+    verifyToken,
 }
-from "../controllers/businessController.js";
-
-import { verifyToken }
 from "../middlewares/authMiddleware.js";
 
-import { validateSchema }
-from "../middlewares/validateSchema.js";
+const router = express.Router();
 
-import { businessSchema }
-from "../schemas/businessSchema.js";
-
-const router =
-    express.Router();
-
-// CREATE
-router.post(
-
-    "/businesses",
-
-    verifyToken,
-
-    validateSchema(
-        businessSchema
-    ),
-
-    createBusiness
-);
-
-// GET
+// DASHBOARD NEGOCIO
 router.get(
 
-    "/businesses",
-
-    getBusinesses
-);
-
-// UPDATE
-router.put(
-
-    "/businesses/:id",
+    "/business/dashboard",
 
     verifyToken,
 
-    updateBusiness
-);
+    async (req, res, next) => {
 
-// DELETE
-router.delete(
+        try {
 
-    "/businesses/:id",
+            // BUSCAR NEGOCIO DEL USUARIO
+            const businessResult =
+                await pool.query(
 
-    verifyToken,
+                    `
+                    SELECT *
+                    FROM businesses
+                    WHERE user_id = $1
+                    LIMIT 1
+                    `,
 
-    deleteBusiness
+                    [req.user.id]
+
+                );
+
+            if (
+                businessResult.rows.length === 0
+            ) {
+
+                return res.status(404).json({
+
+                    error:
+                        "No tienes un negocio asociado",
+
+                });
+
+            }
+
+            const business =
+                businessResult.rows[0];
+
+            // RESERVAS DEL NEGOCIO
+            const reservationsResult =
+                await pool.query(
+
+                    `
+                    SELECT
+
+                        r.*,
+
+                        u.name
+                        AS client_name,
+
+                        p.name
+                        AS professional_name
+
+                    FROM reservations r
+
+                    LEFT JOIN users u
+                    ON u.id = r.user_id
+
+                    LEFT JOIN professionals p
+                    ON p.id = r.professional_id
+
+                    WHERE r.business_id = $1
+
+                    ORDER BY
+                        r.date ASC,
+                        r.time ASC
+                    `,
+
+                    [business.id]
+
+                );
+
+            res.json({
+
+                business,
+
+                reservations:
+                    reservationsResult.rows,
+
+            });
+
+        } catch (error) {
+
+            next(error);
+
+        }
+
+    }
+
 );
 
 export default router;

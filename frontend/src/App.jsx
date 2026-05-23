@@ -20,71 +20,27 @@ import Footer from "./components/Footer";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
-
   return (
-
     <div className="bg-black text-white overflow-x-hidden min-h-screen">
-
       <ScrollToTop />
 
       <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/login" element={<Login />} />
 
-        {/* HOME */}
-        <Route
-          path="/"
-          element={<Home />}
-        />
+        <Route path="/services" element={<Services />} />
+        <Route path="/business/:id" element={<Business />} />
+        <Route path="/professionals" element={<Professionals />} />
+        <Route path="/professional/:id" element={<ProfessionalProfile />} />
+        <Route path="/how-it-works" element={<HowItWorks />} />
+        <Route path="/join-professionals" element={<JoinProfessionals />} />
 
-        {/* AUTH */}
-        <Route
-          path="/register"
-          element={<Register />}
-        />
-
-        <Route
-          path="/login"
-          element={<Login />}
-        />
-
-        {/* PUBLIC PAGES */}
-        <Route
-          path="/services"
-          element={<Services />}
-        />
-
-        <Route
-          path="/business/:id"
-          element={<Business />}
-        />
-
-        <Route
-          path="/professionals"
-          element={<Professionals />}
-        />
-
-        <Route
-          path="/professional/:id"
-          element={<ProfessionalProfile />}
-        />
-
-        <Route
-          path="/how-it-works"
-          element={<HowItWorks />}
-        />
-
-        <Route
-          path="/join-professionals"
-          element={<JoinProfessionals />}
-        />
-
-        {/* CLIENT ONLY */}
         <Route
           path="/booking/:businessId/:serviceIndex"
           element={
             <ProtectedRoute allowedRole="client">
-
               <Booking />
-
             </ProtectedRoute>
           }
         />
@@ -93,9 +49,7 @@ function App() {
           path="/dashboard"
           element={
             <ProtectedRoute allowedRole="client">
-
               <ClientDashboard />
-
             </ProtectedRoute>
           }
         />
@@ -104,21 +58,16 @@ function App() {
           path="/my-reservations"
           element={
             <ProtectedRoute allowedRole="client">
-
               <MyReservations />
-
             </ProtectedRoute>
           }
         />
 
-        {/* BUSINESS ONLY */}
         <Route
           path="/business-dashboard"
           element={
             <ProtectedRoute allowedRole="business">
-
               <BusinessDashboard />
-
             </ProtectedRoute>
           }
         />
@@ -127,19 +76,14 @@ function App() {
           path="/export-reservations"
           element={
             <ProtectedRoute allowedRole="business">
-
               <ExportReservations />
-
             </ProtectedRoute>
           }
         />
-
       </Routes>
 
       <Footer />
-
     </div>
-
   );
 }
 

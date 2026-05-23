@@ -1,7 +1,10 @@
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+
 import Navbar from "../components/Navbar";
 import { useAuth } from "../context/AuthContext";
-import businesses from "../data/businesses";
+
+const API_URL = "https://reservapo.onrender.com";
 
 function Business() {
 
@@ -9,11 +12,13 @@ function Business() {
 
     const navigate = useNavigate();
 
-    const business = businesses.find(
-        (b) => b.id === Number(id)
-    );
-
     const { user } = useAuth();
+
+    const [business, setBusiness] = useState(null);
+
+    const [loading, setLoading] = useState(true);
+
+    const [error, setError] = useState("");
 
     const userRole = user?.role?.toLowerCase();
 
@@ -21,16 +26,75 @@ function Business() {
 
     const isBusiness = userRole === "business";
 
-    if (!business) {
+    const fallbackImage =
+        "https://images.unsplash.com/photo-1503951914875-452162b0f3f1";
 
-        return (
-            <div className="bg-black min-h-screen text-white flex items-center justify-center">
+    useEffect(() => {
 
-                Negocio no encontrado.
+        const fetchBusiness = async () => {
 
-            </div>
-        );
-    }
+            try {
+
+                setLoading(true);
+
+                const response = await fetch(
+                    `${API_URL}/businesses`
+                );
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        "No se pudo cargar el negocio."
+                    );
+
+                }
+
+                const data = await response.json();
+
+                const selectedBusiness =
+                    data.businesses?.find(
+                        (item) =>
+                            Number(item.id) === Number(id)
+                    );
+
+                if (!selectedBusiness) {
+
+                    setError(
+                        "Negocio no encontrado."
+                    );
+
+                    return;
+
+                }
+
+                setBusiness(selectedBusiness);
+
+            } catch (error) {
+
+                console.log(error);
+
+                setError(
+                    "No se pudo cargar el negocio."
+                );
+
+            } finally {
+
+                setLoading(false);
+
+            }
+
+        };
+
+        fetchBusiness();
+
+    }, [id]);
+
+    const services = business?.services || [
+        {
+            name: "Servicio general",
+            price: "$15.000",
+        },
+    ];
 
     const handleReservation = (serviceIndex) => {
 
@@ -50,14 +114,37 @@ function Business() {
 
         }
 
-        navigate(`/booking/${business.id}/${serviceIndex}`);
+        navigate(
+            `/booking/${business.id}/${serviceIndex}`
+        );
 
     };
+
+    if (loading) {
+
+        return (
+            <div className="bg-black min-h-screen text-white flex items-center justify-center">
+
+                Cargando negocio...
+
+            </div>
+        );
+    }
+
+    if (error || !business) {
+
+        return (
+            <div className="bg-black min-h-screen text-white flex items-center justify-center">
+
+                {error || "Negocio no encontrado."}
+
+            </div>
+        );
+    }
 
     return (
         <div className="bg-black min-h-screen text-white overflow-x-hidden relative isolate">
 
-            {/* GLOW */}
             <div className="absolute top-[-200px] left-[-200px] w-[500px] h-[500px] bg-violet-600 opacity-20 blur-[120px] rounded-full pointer-events-none -z-10"></div>
 
             <div className="absolute bottom-[-200px] right-[-200px] w-[500px] h-[500px] bg-fuchsia-600 opacity-20 blur-[120px] rounded-full pointer-events-none -z-10"></div>
@@ -70,13 +157,15 @@ function Business() {
 
                     <div className="mt-10 grid xl:grid-cols-[320px_1fr_320px] gap-8">
 
-                        {/* LEFT */}
                         <div className="space-y-6">
 
                             <div className="bg-white/5 border border-white/10 rounded-[2rem] overflow-hidden backdrop-blur-xl">
 
                                 <img
-                                    src={business.image}
+                                    src={
+                                        business.image_url ||
+                                        fallbackImage
+                                    }
                                     alt={business.name}
                                     className="w-full h-[320px] object-cover"
                                 />
@@ -97,13 +186,13 @@ function Business() {
 
                                         <p className="text-zinc-500 text-sm">
 
-                                            Dirección
+                                            Ciudad
 
                                         </p>
 
                                         <p className="mt-1">
 
-                                            {business.address}
+                                            {business.city || "No especificada"}
 
                                         </p>
 
@@ -113,13 +202,13 @@ function Business() {
 
                                         <p className="text-zinc-500 text-sm">
 
-                                            Teléfono
+                                            Categoría
 
                                         </p>
 
                                         <p className="mt-1">
 
-                                            {business.phone}
+                                            {business.category || "No especificada"}
 
                                         </p>
 
@@ -135,7 +224,7 @@ function Business() {
 
                                         <p className="mt-1">
 
-                                            {business.schedule}
+                                            No especificado
 
                                         </p>
 
@@ -147,7 +236,6 @@ function Business() {
 
                         </div>
 
-                        {/* CENTER */}
                         <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8 backdrop-blur-xl">
 
                             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
@@ -168,7 +256,7 @@ function Business() {
 
                                     <p className="mt-4 text-zinc-400 max-w-2xl leading-relaxed">
 
-                                        {business.description}
+                                        {business.description || "Sin descripción disponible."}
 
                                     </p>
 
@@ -178,13 +266,13 @@ function Business() {
 
                                     <p className="text-yellow-400 text-3xl">
 
-                                        ⭐ {business.rating}
+                                        ⭐ 5.0
 
                                     </p>
 
                                     <p className="mt-2 text-zinc-400 text-sm">
 
-                                        {business.reviews}
+                                        Nuevo negocio
 
                                     </p>
 
@@ -192,7 +280,6 @@ function Business() {
 
                             </div>
 
-                            {/* SERVICES */}
                             <div className="mt-12">
 
                                 <div className="flex items-center justify-between">
@@ -205,7 +292,7 @@ function Business() {
 
                                     <p className="text-zinc-500">
 
-                                        {business.services.length} disponibles
+                                        {services.length} disponibles
 
                                     </p>
 
@@ -213,7 +300,7 @@ function Business() {
 
                                 <div className="mt-8 space-y-4">
 
-                                    {business.services.map((service, index) => (
+                                    {services.map((service, index) => (
 
                                         <div
                                             key={index}
@@ -301,7 +388,6 @@ function Business() {
 
                         </div>
 
-                        {/* RIGHT */}
                         <div className="space-y-6">
 
                             <div className="bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-[2rem] p-8 shadow-2xl shadow-violet-500/20">
