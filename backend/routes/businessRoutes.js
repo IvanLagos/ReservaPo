@@ -10,6 +10,80 @@ from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
+// LISTAR NEGOCIOS PÚBLICOS
+router.get(
+
+    "/businesses",
+
+    async (req, res, next) => {
+
+        try {
+
+            const result =
+                await pool.query(
+
+                    `
+                    SELECT
+
+                        id,
+                        user_id,
+                        name,
+                        category,
+                        city,
+                        description,
+                        image_url
+
+                    FROM businesses
+
+                    ORDER BY id ASC
+                    `
+
+                );
+
+            const businesses =
+                result.rows.map(
+                    (business) => ({
+
+                        ...business,
+
+                        rating: 4.9,
+
+                        reviews: 120,
+
+                        services: [
+                            {
+                                name: "Corte clásico",
+                                price: "$12.000",
+                            },
+                            {
+                                name: "Corte + barba",
+                                price: "$18.000",
+                            },
+                            {
+                                name: "Perfilado de barba",
+                                price: "$10.000",
+                            },
+                        ],
+
+                    })
+                );
+
+            res.json({
+
+                businesses,
+
+            });
+
+        } catch (error) {
+
+            next(error);
+
+        }
+
+    }
+
+);
+
 // DASHBOARD NEGOCIO
 router.get(
 
@@ -21,7 +95,6 @@ router.get(
 
         try {
 
-            // BUSCAR NEGOCIO DEL USUARIO LOGUEADO
             const businessResult =
                 await pool.query(
 
@@ -63,7 +136,6 @@ router.get(
             const business =
                 businessResult.rows[0];
 
-            // RESERVAS REALES DEL NEGOCIO
             const reservationsResult =
                 await pool.query(
 
