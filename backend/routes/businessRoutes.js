@@ -21,14 +21,25 @@ router.get(
 
         try {
 
-            // BUSCAR NEGOCIO DEL USUARIO
+            // BUSCAR NEGOCIO DEL USUARIO LOGUEADO
             const businessResult =
                 await pool.query(
 
                     `
-                    SELECT *
+                    SELECT
+
+                        id,
+                        user_id,
+                        name,
+                        category,
+                        city,
+                        description,
+                        image_url
+
                     FROM businesses
+
                     WHERE user_id = $1
+
                     LIMIT 1
                     `,
 
@@ -52,20 +63,36 @@ router.get(
             const business =
                 businessResult.rows[0];
 
-            // RESERVAS DEL NEGOCIO
+            // RESERVAS REALES DEL NEGOCIO
             const reservationsResult =
                 await pool.query(
 
                     `
                     SELECT
 
-                        r.*,
+                        r.id,
+                        r.business_id,
+                        r.user_id,
+                        r.professional_id,
+
+                        r.reservation_date
+                        AS date,
+
+                        r.reservation_time
+                        AS time,
+
+                        r.service,
+                        r.status,
+                        r.payment_status,
 
                         u.name
                         AS client_name,
 
                         p.name
-                        AS professional_name
+                        AS professional_name,
+
+                        p.specialty
+                        AS professional_specialty
 
                     FROM reservations r
 
@@ -78,8 +105,10 @@ router.get(
                     WHERE r.business_id = $1
 
                     ORDER BY
-                        r.date ASC,
-                        r.time ASC
+
+                        r.reservation_date ASC,
+
+                        r.reservation_time ASC
                     `,
 
                     [business.id]

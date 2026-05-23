@@ -9,8 +9,9 @@ import ProfessionalsManager from "../components/ProfessionalsManager";
 
 import businessSettingsData from "../data/businessSettings";
 
-const API_URL =
-    import.meta.env.VITE_API_URL || "http://localhost:3000";
+const API_URL = "https://reservapo.onrender.com";
+
+console.log(API_URL);
 
 function BusinessDashboard() {
     const [activeTab, setActiveTab] = useState("dashboard");
