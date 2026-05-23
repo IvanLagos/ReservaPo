@@ -1,6 +1,9 @@
 import express
 from "express";
 
+import { pool }
+from "../consultas.js";
+
 import {
 
     createProfessional,
@@ -40,12 +43,61 @@ router.post(
     createProfessional
 );
 
-// GET
+// GET ALL
 router.get(
 
     "/professionals",
 
     getProfessionals
+);
+
+// GET BY BUSINESS
+router.get(
+
+    "/professionals/:businessId",
+
+    async (req, res, next) => {
+
+        try {
+
+            const { businessId } =
+                req.params;
+
+            const result =
+                await pool.query(
+
+                    `
+                    SELECT
+                        id,
+                        business_id,
+                        name,
+                        specialty,
+                        phone,
+                        image
+                    FROM professionals
+                    WHERE business_id = $1
+                    ORDER BY id ASC
+                    `,
+
+                    [businessId]
+
+                );
+
+            res.json({
+
+                professionals:
+                    result.rows,
+
+            });
+
+        } catch (error) {
+
+            next(error);
+
+        }
+
+    }
+
 );
 
 // UPDATE

@@ -67,10 +67,10 @@ function Services() {
         );
 
   return (
-    <div className="bg-black min-h-screen text-white overflow-x-hidden relative isolate">
-      <div className="absolute top-[-250px] left-[-250px] w-[600px] h-[600px] bg-violet-600 opacity-20 blur-[140px] rounded-full pointer-events-none -z-10"></div>
+    <main className="bg-black min-h-dvh text-white overflow-x-hidden overflow-y-visible relative isolate">
+      <div className="fixed top-[-250px] left-[-250px] w-[600px] h-[600px] bg-violet-600 opacity-20 blur-[140px] rounded-full pointer-events-none -z-10"></div>
 
-      <div className="absolute bottom-[-250px] right-[-250px] w-[600px] h-[600px] bg-fuchsia-600 opacity-20 blur-[140px] rounded-full pointer-events-none -z-10"></div>
+      <div className="fixed bottom-[-250px] right-[-250px] w-[600px] h-[600px] bg-fuchsia-600 opacity-20 blur-[140px] rounded-full pointer-events-none -z-10"></div>
 
       <Navbar />
 
@@ -149,7 +149,7 @@ function Services() {
           ) : (
             <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-8">
               {filteredBusinesses.map((business) => (
-                <div
+                <article
                   key={business.id}
                   onClick={() => navigate(`/business/${business.id}`)}
                   className="group bg-white/5 border border-white/10 rounded-[2rem] overflow-hidden cursor-pointer hover:border-violet-500/50 hover:-translate-y-1 transition duration-300 backdrop-blur-xl"
@@ -203,13 +203,13 @@ function Services() {
                       Ver negocio
                     </button>
                   </div>
-                </div>
+                </article>
               ))}
             </div>
           )}
         </div>
       </section>
-    </div>
+    </main>
   );
 }
 
