@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-
 import { Link } from "react-router-dom";
 
 import Navbar from "../components/Navbar";
@@ -18,6 +17,43 @@ function MyReservations() {
     "https://images.unsplash.com/photo-1503951914875-452162b0f3f1";
 
   useEffect(() => {
+    async function loadReservations() {
+      try {
+        setLoading(true);
+
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+          setReservations([]);
+          return;
+        }
+
+        const response = await fetch(`${API_URL}/reservations`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Error obteniendo reservas");
+        }
+
+        setReservations(data.reservations || []);
+      } catch (error) {
+        console.log(error);
+        setReservations([]);
+        setErrorMessage(error.message);
+
+        setTimeout(() => {
+          setErrorMessage("");
+        }, 4000);
+      } finally {
+        setLoading(false);
+      }
+    }
+
     loadReservations();
   }, []);
 
@@ -37,41 +73,6 @@ function MyReservations() {
     }, 4000);
   };
 
-  async function loadReservations() {
-    try {
-      setLoading(true);
-
-      const token = localStorage.getItem("token");
-
-      if (!token) {
-        setReservations([]);
-        return;
-      }
-
-      const response = await fetch(`${API_URL}/reservations`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.error || "Error obteniendo reservas"
-        );
-      }
-
-      setReservations(data.reservations || []);
-    } catch (error) {
-      console.log(error);
-      setReservations([]);
-      showError(error.message);
-    } finally {
-      setLoading(false);
-    }
-  }
-
   async function handleCancelReservation(id) {
     const confirmed = window.confirm(
       "¿Seguro que quieres cancelar esta reserva?"
@@ -89,22 +90,17 @@ function MyReservations() {
         return;
       }
 
-      const response = await fetch(
-        `${API_URL}/reservations/${id}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await fetch(`${API_URL}/reservations/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(
-          data.error || "No se pudo cancelar la reserva"
-        );
+        throw new Error(data.error || "No se pudo cancelar la reserva");
       }
 
       setReservations((prev) =>
@@ -201,8 +197,8 @@ function MyReservations() {
               </h1>
 
               <p className="mt-6 text-zinc-400 text-lg leading-relaxed max-w-2xl">
-                Revisa tus reservas, cancela citas y mantén tu agenda
-                actualizada.
+                Revisa tus reservas, cancela citas, reagenda horarios y mantén
+                tu agenda actualizada.
               </p>
             </div>
 
@@ -231,8 +227,8 @@ function MyReservations() {
               </h2>
 
               <p className="mt-6 text-zinc-400 text-lg leading-relaxed max-w-2xl mx-auto">
-                Cuando reserves un servicio, podrás visualizar aquí todos
-                los detalles de tus próximas citas.
+                Cuando reserves un servicio, podrás visualizar aquí todos los
+                detalles de tus próximas citas.
               </p>
 
               <Link
@@ -319,13 +315,13 @@ function MyReservations() {
 
                           <div className="mt-10 bg-black/30 border border-white/10 rounded-2xl p-6">
                             <h3 className="text-lg font-semibold">
-                              Política de cancelación
+                              Política de cambios
                             </h3>
 
                             <p className="mt-4 text-zinc-400 leading-relaxed">
-                              Al cancelar una reserva, la hora queda liberada
-                              automáticamente para que otra persona pueda
-                              tomarla.
+                              Puedes cancelar o reagendar tu reserva. Al
+                              cancelar, la hora queda liberada automáticamente
+                              para que otra persona pueda tomarla.
                             </p>
                           </div>
                         </div>
@@ -349,26 +345,37 @@ function MyReservations() {
                             </h3>
                           </div>
 
-                          {!isCancelled ? (
-                            <button
-                              onClick={() =>
-                                handleCancelReservation(reservation.id)
-                              }
-                              disabled={cancellingId === reservation.id}
-                              className="bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 px-6 py-3 rounded-2xl transition disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              {cancellingId === reservation.id
-                                ? "Cancelando..."
-                                : "Cancelar reserva"}
-                            </button>
-                          ) : (
-                            <button
-                              disabled
-                              className="bg-red-500/10 border border-red-500/20 text-red-400 px-6 py-3 rounded-2xl cursor-not-allowed"
-                            >
-                              Reserva cancelada
-                            </button>
-                          )}
+                          <div className="flex flex-wrap gap-4">
+                            {!isCancelled && (
+                              <Link
+                                to={`/rebook/${reservation.id}/${reservation.business_id}/0`}
+                                className="bg-violet-500/10 border border-violet-500/20 text-violet-300 hover:bg-violet-500/20 px-6 py-3 rounded-2xl transition"
+                              >
+                                Reagendar
+                              </Link>
+                            )}
+
+                            {!isCancelled ? (
+                              <button
+                                onClick={() =>
+                                  handleCancelReservation(reservation.id)
+                                }
+                                disabled={cancellingId === reservation.id}
+                                className="bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 px-6 py-3 rounded-2xl transition disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                {cancellingId === reservation.id
+                                  ? "Cancelando..."
+                                  : "Cancelar reserva"}
+                              </button>
+                            ) : (
+                              <button
+                                disabled
+                                className="bg-red-500/10 border border-red-500/20 text-red-400 px-6 py-3 rounded-2xl cursor-not-allowed"
+                              >
+                                Reserva cancelada
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
