@@ -41,48 +41,48 @@ function BusinessDashboard() {
   }, [settings]);
 
   useEffect(() => {
+    async function fetchDashboard() {
+      try {
+        setLoading(true);
+        setError("");
+
+        const token =
+          localStorage.getItem("token");
+
+        const response = await fetch(
+          `${API_URL}/business/dashboard`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            data.error ||
+              "Error cargando panel del negocio"
+          );
+        }
+
+        setBusiness(data.business);
+
+        const sortedReservations = (
+          data.reservations || []
+        ).sort((a, b) => b.id - a.id);
+
+        setReservations(sortedReservations);
+      } catch (error) {
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+
     fetchDashboard();
   }, []);
-
-  async function fetchDashboard() {
-    try {
-      setLoading(true);
-      setError("");
-
-      const token =
-        localStorage.getItem("token");
-
-      const response = await fetch(
-        `${API_URL}/business/dashboard`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.error ||
-            "Error cargando panel del negocio"
-        );
-      }
-
-      setBusiness(data.business);
-
-      const sortedReservations = (
-        data.reservations || []
-      ).sort((a, b) => b.id - a.id);
-
-      setReservations(sortedReservations);
-    } catch (error) {
-      setError(error.message);
-    } finally {
-      setLoading(false);
-    }
-  }
 
   async function updateReservationStatus(
     reservationId,
@@ -248,33 +248,7 @@ function BusinessDashboard() {
                 profesionales desde un solo lugar.
               </p>
             </div>
-
-            <div className="flex flex-wrap gap-4">
-              <button
-                onClick={() =>
-                  setActiveTab("reservations")
-                }
-                className="bg-white text-black hover:bg-zinc-200 px-6 py-3 rounded-2xl transition font-medium"
-              >
-                Ver reservas
-              </button>
-
-              <button
-                onClick={() =>
-                  setActiveTab("schedule")
-                }
-                className="bg-white/5 border border-white/10 hover:bg-white/10 px-6 py-3 rounded-2xl transition font-medium"
-              >
-                Configurar horarios
-              </button>
-            </div>
           </div>
-
-          <div className="mt-10">
-            <DashboardStats />
-          </div>
-
-          {/* REAL STATS */}
 
           <div className="mt-10 grid md:grid-cols-3 gap-5">
             <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8">
@@ -322,320 +296,103 @@ function BusinessDashboard() {
 
           {!loading && !error && (
             <div className="mt-10">
-              {activeTab === "dashboard" && (
-                <div className="grid xl:grid-cols-[1fr_420px] gap-8 items-start">
-                  <div className="space-y-8 min-w-0">
-                    <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8 backdrop-blur-xl">
-                      <div className="flex items-center justify-between gap-4 flex-wrap">
-                        <div>
-                          <h2 className="text-2xl font-semibold">
-                            Próximas reservas
-                          </h2>
+              <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8 backdrop-blur-xl">
+                <h2 className="text-2xl font-semibold">
+                  Próximas reservas
+                </h2>
 
-                          <p className="mt-2 text-zinc-400">
-                            Gestiona las próximas citas
-                            de tu negocio.
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="mt-8 space-y-4">
-                        {nextReservations.length ===
-                        0 ? (
-                          <div className="bg-black/30 border border-white/10 rounded-2xl p-6 text-zinc-400">
-                            Aún no tienes reservas.
-                          </div>
-                        ) : (
-                          nextReservations.map(
-                            (reservation) => (
-                              <div
-                                key={reservation.id}
-                                className="bg-black/30 border border-white/10 rounded-2xl p-5"
-                              >
-                                <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6">
-                                  <div>
-                                    <h3 className="text-xl font-semibold">
-                                      {reservation.client_name ||
-                                        "Cliente"}
-                                    </h3>
-
-                                    <p className="mt-2 text-zinc-400">
-                                      {reservation.service}
-                                    </p>
-
-                                    <div className="mt-4 flex flex-wrap gap-6">
-                                      <div>
-                                        <p className="text-zinc-500 text-sm">
-                                          Profesional
-                                        </p>
-
-                                        <p className="mt-1">
-                                          {reservation.professional_name}
-                                        </p>
-                                      </div>
-
-                                      <div>
-                                        <p className="text-zinc-500 text-sm">
-                                          Fecha
-                                        </p>
-
-                                        <p className="mt-1">
-                                          {reservation.date}
-                                        </p>
-                                      </div>
-
-                                      <div>
-                                        <p className="text-zinc-500 text-sm">
-                                          Hora
-                                        </p>
-
-                                        <p className="mt-1">
-                                          {reservation.time}
-                                        </p>
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  <div className="flex flex-col items-start xl:items-end gap-4">
-                                    {getStatusBadge(
-                                      reservation.status
-                                    )}
-
-                                    {reservation.status?.toLowerCase() !==
-                                      "confirmed" &&
-                                      reservation.status?.toLowerCase() !==
-                                        "cancelled" && (
-                                        <button
-                                          onClick={() =>
-                                            updateReservationStatus(
-                                              reservation.id,
-                                              "confirmed"
-                                            )
-                                          }
-                                          disabled={
-                                            updatingReservation ===
-                                            reservation.id
-                                          }
-                                          className="bg-green-500 text-white hover:bg-green-400 px-5 py-3 rounded-2xl transition disabled:opacity-50"
-                                        >
-                                          {updatingReservation ===
-                                          reservation.id
-                                            ? "Confirmando..."
-                                            : "Confirmar"}
-                                        </button>
-                                      )}
-                                  </div>
-                                </div>
-                              </div>
-                            )
-                          )
-                        )}
-                      </div>
+                <div className="mt-8 space-y-4">
+                  {nextReservations.length === 0 ? (
+                    <div className="bg-black/30 border border-white/10 rounded-2xl p-6 text-zinc-400">
+                      Aún no tienes reservas.
                     </div>
-
-                    <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8 backdrop-blur-xl">
-                      <div className="flex items-center justify-between gap-4 flex-wrap">
-                        <div>
-                          <h2 className="text-2xl font-semibold">
-                            Horarios activos
-                          </h2>
-
-                          <p className="mt-2 text-zinc-400">
-                            Configuración actual de
-                            disponibilidad.
-                          </p>
-                        </div>
-
-                        <button
-                          onClick={() =>
-                            setActiveTab("schedule")
-                          }
-                          className="bg-white/5 border border-white/10 hover:bg-white/10 px-5 py-3 rounded-2xl transition font-medium"
+                  ) : (
+                    nextReservations.map(
+                      (reservation) => (
+                        <div
+                          key={reservation.id}
+                          className="bg-black/30 border border-white/10 rounded-2xl p-5"
                         >
-                          Editar horarios
-                        </button>
-                      </div>
-
-                      <div className="mt-8 grid md:grid-cols-3 gap-4">
-                        {[
-                          "Lunes",
-                          "Martes",
-                          "Miércoles",
-                          "Jueves",
-                          "Viernes",
-                          "Sábado",
-                        ].map((day) => (
-                          <div
-                            key={day}
-                            className="bg-black/30 border border-white/10 rounded-2xl p-5"
-                          >
-                            <h3 className="font-semibold">
-                              {day}
-                            </h3>
-
-                            <p className="mt-3 text-zinc-400">
-                              09:00 - 20:00
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-8 min-w-0">
-                    <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8 backdrop-blur-xl">
-                      <h2 className="text-2xl font-semibold">
-                        Información del negocio
-                      </h2>
-
-                      <div className="mt-8 space-y-6">
-                        <div>
-                          <p className="text-zinc-500 text-sm">
-                            Nombre
-                          </p>
-
-                          <p className="mt-2">
-                            {business?.name ||
-                              "Sin nombre"}
-                          </p>
-                        </div>
-
-                        <div>
-                          <p className="text-zinc-500 text-sm">
-                            Ciudad
-                          </p>
-
-                          <p className="mt-2">
-                            {business?.city ||
-                              "Sin ciudad"}
-                          </p>
-                        </div>
-
-                        <div>
-                          <p className="text-zinc-500 text-sm">
-                            Categoría
-                          </p>
-
-                          <p className="mt-2">
-                            {business?.category ||
-                              "Sin categoría"}
-                          </p>
-                        </div>
-
-                        <div>
-                          <p className="text-zinc-500 text-sm">
-                            Estado
-                          </p>
-
-                          <div className="mt-3 inline-flex bg-green-500/10 border border-green-500/20 text-green-400 px-4 py-2 rounded-xl text-sm">
-                            Negocio activo
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8 backdrop-blur-xl">
-                      <h2 className="text-2xl font-semibold">
-                        Reglas del negocio
-                      </h2>
-
-                      <div className="mt-8 space-y-5">
-                        {[
-                          {
-                            title:
-                              "Permitir cancelaciones",
-
-                            description:
-                              "Clientes pueden cancelar reservas.",
-
-                            key:
-                              "allowCancellations",
-                          },
-
-                          {
-                            title:
-                              "Confirmación automática",
-
-                            description:
-                              "Las reservas se aprueban automáticamente.",
-
-                            key:
-                              "autoConfirmReservations",
-                          },
-
-                          {
-                            title:
-                              "Mostrar negocio públicamente",
-
-                            description:
-                              "Tu negocio aparecerá en búsquedas.",
-
-                            key:
-                              "publicBusiness",
-                          },
-                        ].map((rule) => (
-                          <div
-                            key={rule.key}
-                            className="bg-black/30 border border-white/10 rounded-2xl p-6 flex items-start justify-between gap-6"
-                          >
-                            <div className="flex-1 min-w-0">
-                              <h3 className="font-semibold text-lg leading-tight">
-                                {rule.title}
+                          <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6">
+                            <div>
+                              <h3 className="text-xl font-semibold">
+                                {reservation.client_name ||
+                                  "Cliente"}
                               </h3>
 
-                              <p className="mt-3 text-zinc-400 text-sm leading-relaxed">
-                                {rule.description}
+                              <p className="mt-2 text-zinc-400">
+                                {reservation.service}
                               </p>
+
+                              <div className="mt-4 flex flex-wrap gap-6">
+                                <div>
+                                  <p className="text-zinc-500 text-sm">
+                                    Profesional
+                                  </p>
+
+                                  <p className="mt-1">
+                                    {reservation.professional_name}
+                                  </p>
+                                </div>
+
+                                <div>
+                                  <p className="text-zinc-500 text-sm">
+                                    Fecha
+                                  </p>
+
+                                  <p className="mt-1">
+                                    {reservation.date}
+                                  </p>
+                                </div>
+
+                                <div>
+                                  <p className="text-zinc-500 text-sm">
+                                    Hora
+                                  </p>
+
+                                  <p className="mt-1">
+                                    {reservation.time}
+                                  </p>
+                                </div>
+                              </div>
                             </div>
 
-                            <button
-                              onClick={() =>
-                                setSettings({
-                                  ...settings,
+                            <div className="flex flex-col items-start xl:items-end gap-4">
+                              {getStatusBadge(
+                                reservation.status
+                              )}
 
-                                  [rule.key]:
-                                    !settings[
-                                      rule.key
-                                    ],
-                                })
-                              }
-                              className={`min-w-[56px] w-14 h-8 rounded-full transition relative ${
-                                settings[
-                                  rule.key
-                                ]
-                                  ? "bg-violet-500"
-                                  : "bg-zinc-700"
-                              }`}
-                            >
-                              <div
-                                className={`absolute top-1 w-6 h-6 bg-white rounded-full transition ${
-                                  settings[
-                                    rule.key
-                                  ]
-                                    ? "right-1"
-                                    : "left-1"
-                                }`}
-                              ></div>
-                            </button>
+                              {reservation.status?.toLowerCase() !==
+                                "confirmed" &&
+                                reservation.status?.toLowerCase() !==
+                                  "cancelled" && (
+                                  <button
+                                    onClick={() =>
+                                      updateReservationStatus(
+                                        reservation.id,
+                                        "confirmed"
+                                      )
+                                    }
+                                    disabled={
+                                      updatingReservation ===
+                                      reservation.id
+                                    }
+                                    className="bg-green-500 text-white hover:bg-green-400 px-5 py-3 rounded-2xl transition disabled:opacity-50"
+                                  >
+                                    {updatingReservation ===
+                                    reservation.id
+                                      ? "Confirmando..."
+                                      : "Confirmar"}
+                                  </button>
+                                )}
+                            </div>
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
+                        </div>
+                      )
+                    )
+                  )}
                 </div>
-              )}
-
-              {activeTab === "reservations" && (
-                <ReservationsManager />
-              )}
-
-              {activeTab === "schedule" && (
-                <ScheduleManager />
-              )}
-
-              {activeTab === "professionals" && (
-                <ProfessionalsManager />
-              )}
+              </div>
             </div>
           )}
         </main>
