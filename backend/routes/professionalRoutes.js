@@ -45,8 +45,7 @@ router.get(
                     business_id,
                     name,
                     specialty,
-                    phone,
-                    image_url
+                    phone
                 FROM professionals
                 WHERE business_id = $1
                 ORDER BY id ASC
