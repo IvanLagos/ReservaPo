@@ -2,7 +2,6 @@ function BusinessSidebar({
     activeTab,
     setActiveTab,
     business,
-    stats,
 }) {
     const items = [
         {
@@ -86,7 +85,8 @@ function BusinessSidebar({
                         </h2>
 
                         <p className="text-zinc-400 text-sm mt-1">
-                            {business?.category || "Negocio verificado"}
+                            {business?.category ||
+                                "Negocio verificado"}
                         </p>
                     </div>
                 </div>
@@ -118,7 +118,9 @@ function BusinessSidebar({
                     {items.map((item) => (
                         <button
                             key={item.id}
-                            onClick={() => setActiveTab(item.id)}
+                            onClick={() =>
+                                setActiveTab(item.id)
+                            }
                             className={
                                 `
                                     w-full
@@ -162,61 +164,24 @@ function BusinessSidebar({
                 {/* DIVIDER */}
                 <div className="my-8 h-px bg-white/10"></div>
 
-                {/* QUICK INFO */}
-                <div className="space-y-5">
-                    <div
-                        className="
-                            bg-black/30
-                            border
-                            border-white/10
-                            rounded-2xl
-                            p-5
-                        "
-                    >
-                        <p className="text-zinc-500 text-sm">
-                            Reservas hoy
-                        </p>
+                {/* BUSINESS DESCRIPTION */}
+                <div
+                    className="
+                        bg-black/30
+                        border
+                        border-white/10
+                        rounded-2xl
+                        p-5
+                    "
+                >
+                    <p className="text-zinc-500 text-sm">
+                        Descripción
+                    </p>
 
-                        <h3 className="mt-3 text-3xl font-semibold">
-                            {stats?.todayReservations || 0}
-                        </h3>
-                    </div>
-
-                    <div
-                        className="
-                            bg-black/30
-                            border
-                            border-white/10
-                            rounded-2xl
-                            p-5
-                        "
-                    >
-                        <p className="text-zinc-500 text-sm">
-                            Profesionales
-                        </p>
-
-                        <h3 className="mt-3 text-3xl font-semibold">
-                            {stats?.professionals || 0}
-                        </h3>
-                    </div>
-
-                    <div
-                        className="
-                            bg-black/30
-                            border
-                            border-white/10
-                            rounded-2xl
-                            p-5
-                        "
-                    >
-                        <p className="text-zinc-500 text-sm">
-                            Confirmadas
-                        </p>
-
-                        <h3 className="mt-3 text-3xl font-semibold text-green-400">
-                            {stats?.confirmed || 0}
-                        </h3>
-                    </div>
+                    <p className="mt-3 text-sm text-zinc-300 leading-relaxed">
+                        {business?.description ||
+                            "Administra reservas, horarios y profesionales desde este panel."}
+                    </p>
                 </div>
 
                 {/* FOOTER */}
@@ -231,15 +196,17 @@ function BusinessSidebar({
                         "
                     >
                         <p className="text-violet-300 text-sm">
-                            Ocupación actual
+                            ReservaPo Business
                         </p>
 
-                        <h3 className="mt-3 text-4xl font-bold">
-                            {stats?.occupation || 0}%
+                        <h3 className="mt-3 text-2xl font-bold">
+                            SaaS Panel
                         </h3>
 
-                        <p className="mt-2 text-zinc-400 text-sm">
-                            Basado en reservas activas.
+                        <p className="mt-2 text-zinc-400 text-sm leading-relaxed">
+                            Gestiona tu negocio,
+                            reservas y profesionales
+                            desde un solo lugar.
                         </p>
                     </div>
                 </div>
