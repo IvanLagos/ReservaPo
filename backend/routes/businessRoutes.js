@@ -84,8 +84,23 @@ router.get("/business/dashboard", verifyToken, async (req, res, next) => {
             LEFT JOIN professionals p
             ON p.id = r.professional_id
             WHERE r.business_id = $1
-            ORDER BY
-            r.id DESC
+            ORDER BY r.id DESC
+            `,
+            [business.id]
+        );
+
+        const professionalsResult = await pool.query(
+            `
+            SELECT
+                id,
+                business_id,
+                name,
+                specialty,
+                phone,
+                image_url
+            FROM professionals
+            WHERE business_id = $1
+            ORDER BY id ASC
             `,
             [business.id]
         );
@@ -93,6 +108,7 @@ router.get("/business/dashboard", verifyToken, async (req, res, next) => {
         res.json({
             business,
             reservations: reservationsResult.rows,
+            professionals: professionalsResult.rows,
         });
     } catch (error) {
         next(error);
