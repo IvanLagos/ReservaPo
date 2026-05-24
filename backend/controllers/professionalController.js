@@ -3,13 +3,7 @@ import { pool } from "../consultas.js";
 // CREATE PROFESSIONAL
 export const createProfessional = async (req, res, next) => {
     try {
-        const {
-            business_id,
-            name,
-            specialty,
-            phone,
-            image_url,
-        } = req.body;
+        const { business_id, name, specialty, phone, image_url } = req.body;
 
         if (!business_id || !name || !specialty) {
             return res.status(400).json({
@@ -37,24 +31,11 @@ export const createProfessional = async (req, res, next) => {
         const result = await pool.query(
             `
             INSERT INTO professionals
-            (
-                business_id,
-                name,
-                specialty,
-                phone,
-                image_url
-            )
-            VALUES
-            ($1, $2, $3, $4, $5)
+            (business_id, name, specialty, phone, image_url)
+            VALUES ($1, $2, $3, $4, $5)
             RETURNING *
             `,
-            [
-                business_id,
-                name,
-                specialty,
-                phone || "",
-                image_url || "",
-            ]
+            [business_id, name, specialty, phone || "", image_url || ""]
         );
 
         res.status(201).json({
@@ -72,14 +53,22 @@ export const getProfessionals = async (req, res, next) => {
         const result = await pool.query(
             `
             SELECT
-                id,
-                business_id,
-                name,
-                specialty,
-                phone,
-                image_url
-            FROM professionals
-            ORDER BY id DESC
+                p.id,
+                p.business_id,
+                p.name,
+                p.specialty,
+                p.phone,
+                p.image_url,
+                b.name AS business,
+                b.category AS business_category,
+                b.city AS business_city,
+                b.image_url AS business_image_url,
+                4.9 AS rating,
+                '5 años de experiencia' AS experience
+            FROM professionals p
+            LEFT JOIN businesses b
+            ON b.id = p.business_id
+            ORDER BY p.id DESC
             `
         );
 
@@ -95,13 +84,7 @@ export const getProfessionals = async (req, res, next) => {
 export const updateProfessional = async (req, res, next) => {
     try {
         const { id } = req.params;
-
-        const {
-            name,
-            specialty,
-            phone,
-            image_url,
-        } = req.body;
+        const { name, specialty, phone, image_url } = req.body;
 
         if (!name || !specialty) {
             return res.status(400).json({
@@ -111,9 +94,7 @@ export const updateProfessional = async (req, res, next) => {
 
         const professionalResult = await pool.query(
             `
-            SELECT
-                p.id,
-                p.business_id
+            SELECT p.id
             FROM professionals p
             INNER JOIN businesses b
             ON b.id = p.business_id
@@ -141,13 +122,7 @@ export const updateProfessional = async (req, res, next) => {
             WHERE id = $5
             RETURNING *
             `,
-            [
-                name,
-                specialty,
-                phone || "",
-                image_url || "",
-                id,
-            ]
+            [name, specialty, phone || "", image_url || "", id]
         );
 
         res.json({
@@ -166,9 +141,7 @@ export const deleteProfessional = async (req, res, next) => {
 
         const professionalResult = await pool.query(
             `
-            SELECT
-                p.id,
-                p.business_id
+            SELECT p.id
             FROM professionals p
             INNER JOIN businesses b
             ON b.id = p.business_id
