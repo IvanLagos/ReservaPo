@@ -57,7 +57,7 @@ export const createReservation =
                     AND professional_id = $2
                     AND reservation_date = $3
                     AND reservation_time = $4
-                    AND status != 'cancelled'
+                    AND LOWER(status) != 'cancelled'
                     LIMIT 1
                     `,
 
@@ -173,11 +173,21 @@ export const getReservations =
 
                         reservations.id,
 
+                        reservations.user_id,
+
+                        reservations.business_id,
+
+                        reservations.professional_id,
+
                         reservations.service,
 
                         reservations.reservation_date,
 
-                        reservations.reservation_time,
+                        TO_CHAR(
+                            reservations.reservation_time,
+                            'HH24:MI'
+                        )
+                        AS reservation_time,
 
                         reservations.status,
 
@@ -185,6 +195,9 @@ export const getReservations =
 
                         businesses.name
                         AS business_name,
+
+                        businesses.city
+                        AS business_city,
 
                         professionals.name
                         AS professional_name
@@ -201,7 +214,11 @@ export const getReservations =
 
                     WHERE reservations.user_id = $1
 
-                    ORDER BY reservations.id DESC
+                    ORDER BY
+
+                        reservations.reservation_date DESC,
+
+                        reservations.reservation_time DESC
                     `,
 
                     [req.user.id]
@@ -234,6 +251,8 @@ export const updateReservation =
 
             const {
 
+                professional_id,
+
                 service,
 
                 reservation_date,
@@ -244,6 +263,7 @@ export const updateReservation =
 
             } = req.body;
 
+            // CHECK OWNER
             const reservation =
                 await pool.query(
 
@@ -276,6 +296,76 @@ export const updateReservation =
 
             }
 
+            const currentReservation =
+                reservation.rows[0];
+
+            const nextProfessionalId =
+                professional_id ||
+                currentReservation.professional_id;
+
+            const nextService =
+                service ||
+                currentReservation.service;
+
+            const nextDate =
+                reservation_date ||
+                currentReservation.reservation_date;
+
+            const nextTime =
+                reservation_time ||
+                currentReservation.reservation_time;
+
+            const nextStatus =
+                status ||
+                currentReservation.status;
+
+            // VALIDAR HORA OCUPADA AL REAGENDAR
+            const existingReservation =
+                await pool.query(
+
+                    `
+                    SELECT id
+                    FROM reservations
+                    WHERE business_id = $1
+                    AND professional_id = $2
+                    AND reservation_date = $3
+                    AND reservation_time = $4
+                    AND LOWER(status) != 'cancelled'
+                    AND id != $5
+                    LIMIT 1
+                    `,
+
+                    [
+
+                        currentReservation.business_id,
+
+                        nextProfessionalId,
+
+                        nextDate,
+
+                        nextTime,
+
+                        id,
+
+                    ]
+
+                );
+
+            if (
+                existingReservation.rows.length > 0
+            ) {
+
+                return res
+                    .status(409)
+                    .json({
+
+                        error:
+                            "Esta hora ya fue reservada",
+
+                    });
+
+            }
+
             const result =
                 await pool.query(
 
@@ -283,28 +373,32 @@ export const updateReservation =
                     UPDATE reservations
                     SET
 
-                        service = $1,
+                        professional_id = $1,
 
-                        reservation_date = $2,
+                        service = $2,
 
-                        reservation_time = $3,
+                        reservation_date = $3,
 
-                        status = $4
+                        reservation_time = $4,
 
-                    WHERE id = $5
+                        status = $5
+
+                    WHERE id = $6
 
                     RETURNING *
                     `,
 
                     [
 
-                        service,
+                        nextProfessionalId,
 
-                        reservation_date,
+                        nextService,
 
-                        reservation_time,
+                        nextDate,
 
-                        status,
+                        nextTime,
+
+                        nextStatus,
 
                         id,
 
@@ -330,7 +424,7 @@ export const updateReservation =
 
     };
 
-// DELETE RESERVATION
+// CANCEL RESERVATION
 export const deleteReservation =
     async (req, res, next) => {
 
@@ -339,6 +433,7 @@ export const deleteReservation =
             const { id } =
                 req.params;
 
+            // CHECK OWNER
             const reservation =
                 await pool.query(
 
@@ -371,21 +466,44 @@ export const deleteReservation =
 
             }
 
-            await pool.query(
+            if (
+                reservation.rows[0].status?.toLowerCase() ===
+                "cancelled"
+            ) {
 
-                `
-                DELETE FROM reservations
-                WHERE id = $1
-                `,
+                return res
+                    .status(400)
+                    .json({
 
-                [id]
+                        error:
+                            "La reserva ya está cancelada",
 
-            );
+                    });
+
+            }
+
+            // CANCELAR SIN BORRAR
+            const result =
+                await pool.query(
+
+                    `
+                    UPDATE reservations
+                    SET status = 'cancelled'
+                    WHERE id = $1
+                    RETURNING *
+                    `,
+
+                    [id]
+
+                );
 
             res.json({
 
                 message:
-                    "Reserva eliminada correctamente",
+                    "Reserva cancelada correctamente",
+
+                reservation:
+                    result.rows[0],
 
             });
 
