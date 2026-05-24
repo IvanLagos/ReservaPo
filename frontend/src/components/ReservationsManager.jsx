@@ -13,6 +13,7 @@ function ReservationsManager({
     const [search, setSearch] = useState("");
     const [showModal, setShowModal] = useState(false);
     const [creatingReservation, setCreatingReservation] = useState(false);
+    const [loadingReservationId, setLoadingReservationId] = useState(null);
 
     const [newReservation, setNewReservation] = useState({
         service: "",
@@ -54,6 +55,43 @@ function ReservationsManager({
             return matchesStatus && matchesSearch;
         });
     }, [reservations, statusFilter, search]);
+
+    const getStatusStyles = (status) => {
+        switch (normalizeStatus(status)) {
+            case "Confirmada":
+                return "bg-green-500/10 border border-green-500/20 text-green-400";
+
+            case "Pendiente":
+                return "bg-yellow-500/10 border border-yellow-500/20 text-yellow-400";
+
+            case "Cancelada":
+                return "bg-red-500/10 border border-red-500/20 text-red-400";
+
+            default:
+                return "bg-white/5 border border-white/10 text-white";
+        }
+    };
+
+    async function handleStatusUpdate(reservationId, status) {
+        try {
+            if (status === "cancelled") {
+                const confirmed = window.confirm(
+                    "¿Seguro que deseas cancelar esta reserva?"
+                );
+
+                if (!confirmed) return;
+            }
+
+            setLoadingReservationId(reservationId);
+
+            await updateReservationStatus(reservationId, status);
+            await refreshDashboard();
+        } catch (error) {
+            alert(error.message);
+        } finally {
+            setLoadingReservationId(null);
+        }
+    }
 
     async function createReservation() {
         try {
@@ -112,22 +150,6 @@ function ReservationsManager({
         }
     }
 
-    const getStatusStyles = (status) => {
-        switch (normalizeStatus(status)) {
-            case "Confirmada":
-                return "bg-green-500/10 border border-green-500/20 text-green-400";
-
-            case "Pendiente":
-                return "bg-yellow-500/10 border border-yellow-500/20 text-yellow-400";
-
-            case "Cancelada":
-                return "bg-red-500/10 border border-red-500/20 text-red-400";
-
-            default:
-                return "bg-white/5 border border-white/10 text-white";
-        }
-    };
-
     return (
         <div className="space-y-8">
             <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8 backdrop-blur-xl">
@@ -142,7 +164,7 @@ function ReservationsManager({
                         </h2>
 
                         <p className="mt-3 text-zinc-400 max-w-2xl">
-                            Confirma, cancela y administra reservas reales.
+                            Acepta, cancela y administra las reservas reales de tus clientes.
                         </p>
                     </div>
 
@@ -178,87 +200,93 @@ function ReservationsManager({
                 </div>
             </div>
 
-            <div className="bg-white/5 border border-white/10 rounded-[2rem] backdrop-blur-xl overflow-hidden">
-                <div className="hidden xl:grid grid-cols-7 gap-4 px-8 py-6 border-b border-white/10 text-zinc-500 text-sm">
-                    <div>Cliente</div>
-                    <div>Servicio</div>
-                    <div>Profesional</div>
-                    <div>Fecha</div>
-                    <div>Hora</div>
-                    <div>Estado</div>
-                    <div>Acciones</div>
-                </div>
+            <div className="space-y-5">
+                {filteredReservations.length === 0 ? (
+                    <div className="bg-white/5 border border-white/10 rounded-[2rem] p-10 text-zinc-400">
+                        No se encontraron reservas.
+                    </div>
+                ) : (
+                    filteredReservations.map((reservation) => {
+                        const status = normalizeStatus(reservation.status);
+                        const isLoading = loadingReservationId === reservation.id;
 
-                <div>
-                    {filteredReservations.length === 0 ? (
-                        <div className="p-10 text-zinc-400">
-                            No se encontraron reservas.
-                        </div>
-                    ) : (
-                        filteredReservations.map((reservation) => (
+                        return (
                             <div
                                 key={reservation.id}
-                                className="grid xl:grid-cols-7 gap-6 px-8 py-8 border-b border-white/5 items-center hover:bg-white/[0.03] transition"
+                                className="bg-white/5 border border-white/10 rounded-[2rem] p-7 backdrop-blur-xl"
                             >
-                                <div>
-                                    <h3 className="font-semibold">
-                                        {reservation.client_name || "Cliente"}
-                                    </h3>
-                                </div>
+                                <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6">
+                                    <div className="space-y-3">
+                                        <div className="flex flex-wrap items-center gap-3">
+                                            <h3 className="text-2xl font-semibold">
+                                                {reservation.client_name || "Cliente"}
+                                            </h3>
 
-                                <div>{reservation.service || "Servicio"}</div>
+                                            <div
+                                                className={`inline-flex px-4 py-2 rounded-xl text-sm ${getStatusStyles(
+                                                    reservation.status
+                                                )}`}
+                                            >
+                                                {status}
+                                            </div>
+                                        </div>
 
-                                <div className="text-zinc-400">
-                                    {reservation.professional_name || "Sin asignar"}
-                                </div>
+                                        <div className="flex flex-wrap gap-6 text-zinc-400">
+                                            <div>💈 {reservation.service || "Servicio"}</div>
 
-                                <div>{reservation.date}</div>
+                                            <div>
+                                                👤{" "}
+                                                {reservation.professional_name ||
+                                                    "Sin profesional"}
+                                            </div>
 
-                                <div>{String(reservation.time || "").slice(0, 5)}</div>
+                                            <div>📅 {reservation.date}</div>
 
-                                <div>
-                                    <div
-                                        className={`inline-flex px-4 py-2 rounded-xl text-sm ${getStatusStyles(
-                                            reservation.status
-                                        )}`}
-                                    >
-                                        {normalizeStatus(reservation.status)}
+                                            <div>
+                                                🕒{" "}
+                                                {String(reservation.time || "").slice(0, 5)}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-wrap gap-3">
+                                        {status === "Pendiente" && (
+                                            <button
+                                                disabled={isLoading}
+                                                onClick={() =>
+                                                    handleStatusUpdate(
+                                                        reservation.id,
+                                                        "confirmed"
+                                                    )
+                                                }
+                                                className="bg-green-500 hover:bg-green-400 text-white px-6 py-3 rounded-2xl transition font-medium disabled:opacity-50"
+                                            >
+                                                {isLoading
+                                                    ? "Aceptando..."
+                                                    : "Aceptar reserva"}
+                                            </button>
+                                        )}
+
+                                        {status !== "Cancelada" && (
+                                            <button
+                                                disabled={isLoading}
+                                                onClick={() =>
+                                                    handleStatusUpdate(
+                                                        reservation.id,
+                                                        "cancelled"
+                                                    )
+                                                }
+                                                className="bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 px-6 py-3 rounded-2xl transition font-medium disabled:opacity-50"
+                                            >
+                                                {isLoading ? "Cancelando..." : "Cancelar"}
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
-
-                                <div className="flex flex-wrap gap-3">
-                                    {normalizeStatus(reservation.status) !== "Confirmada" && (
-                                        <button
-                                            onClick={() =>
-                                                updateReservationStatus(
-                                                    reservation.id,
-                                                    "confirmed"
-                                                )
-                                            }
-                                            className="bg-green-500/10 border border-green-500/20 text-green-400 hover:bg-green-500/20 px-4 py-2 rounded-xl transition text-sm"
-                                        >
-                                            Confirmar
-                                        </button>
-                                    )}
-
-                                    {normalizeStatus(reservation.status) !== "Cancelada" && (
-                                        <button
-                                            onClick={() =>
-                                                updateReservationStatus(
-                                                    reservation.id,
-                                                    "cancelled"
-                                                )
-                                            }
-                                            className="bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 px-4 py-2 rounded-xl transition text-sm"
-                                        >
-                                            Cancelar
-                                        </button>
-                                    )}
-                                </div>
                             </div>
-                        ))
-                    )}
-                </div>
+                        );
+                    })
+                )}
             </div>
 
             {showModal && (
