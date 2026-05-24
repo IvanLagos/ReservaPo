@@ -46,6 +46,15 @@ function App() {
         />
 
         <Route
+          path="/rebook/:reservationId/:businessId/:serviceIndex"
+          element={
+            <ProtectedRoute allowedRole="client">
+              <Booking />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
           path="/dashboard"
           element={
             <ProtectedRoute allowedRole="client">
