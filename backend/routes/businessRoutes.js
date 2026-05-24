@@ -8,14 +8,29 @@ router.get("/businesses", async (req, res, next) => {
     try {
         const result = await pool.query(`
             SELECT
+                b.id,
+                b.user_id,
+                b.name,
+                b.category,
+                b.city,
+                b.description,
+                b.image_url
+            FROM businesses b
+            ORDER BY b.id ASC
+        `);
+
+        const servicesResult = await pool.query(`
+            SELECT
                 id,
-                user_id,
+                business_id,
                 name,
-                category,
-                city,
                 description,
-                image_url
-            FROM businesses
+                price,
+                duration_minutes,
+                category,
+                is_active
+            FROM services
+            WHERE is_active = true
             ORDER BY id ASC
         `);
 
@@ -23,11 +38,18 @@ router.get("/businesses", async (req, res, next) => {
             ...business,
             rating: 4.9,
             reviews: 120,
-            services: [
-                { name: "Corte clásico", price: "$12.000" },
-                { name: "Corte + barba", price: "$18.000" },
-                { name: "Perfilado de barba", price: "$10.000" },
-            ],
+            services: servicesResult.rows
+                .filter((service) => service.business_id === business.id)
+                .map((service) => ({
+                    id: service.id,
+                    name: service.name,
+                    description: service.description,
+                    price: `$${Number(service.price || 0).toLocaleString("es-CL")}`,
+                    raw_price: service.price,
+                    duration_minutes: service.duration_minutes,
+                    category: service.category,
+                    is_active: service.is_active,
+                })),
         }));
 
         res.json({ businesses });
@@ -105,10 +127,30 @@ router.get("/business/dashboard", verifyToken, async (req, res, next) => {
             [business.id]
         );
 
+        const servicesResult = await pool.query(
+            `
+            SELECT
+                id,
+                business_id,
+                name,
+                description,
+                price,
+                duration_minutes,
+                category,
+                is_active,
+                created_at
+            FROM services
+            WHERE business_id = $1
+            ORDER BY id DESC
+            `,
+            [business.id]
+        );
+
         res.json({
             business,
             reservations: reservationsResult.rows,
             professionals: professionalsResult.rows,
+            services: servicesResult.rows,
         });
     } catch (error) {
         next(error);

@@ -5,41 +5,37 @@ import BusinessSidebar from "../components/BusinessSidebar";
 import ScheduleManager from "../components/ScheduleManager";
 import ReservationsManager from "../components/ReservationsManager";
 import ProfessionalsManager from "../components/ProfessionalsManager";
+import ServicesManager from "../components/ServicesManager";
 
 import businessSettingsData from "../data/businessSettings";
 
 const API_URL = "https://reservapo.onrender.com";
 
 function BusinessDashboard() {
-    const [activeTab, setActiveTab] =
-        useState("dashboard");
+    const [activeTab, setActiveTab] = useState("dashboard");
 
-    const [business, setBusiness] =
-        useState(null);
+    const [business, setBusiness] = useState(null);
 
-    const [reservations, setReservations] =
-        useState([]);
+    const [reservations, setReservations] = useState([]);
 
-    const [professionals, setProfessionals] =
-        useState([]);
+    const [professionals, setProfessionals] = useState([]);
 
-    const [loading, setLoading] =
-        useState(true);
+    const [services, setServices] = useState([]);
 
-    const [error, setError] =
-        useState("");
+    const [loading, setLoading] = useState(true);
 
-    const [settings, setSettings] =
-        useState(() => {
-            const saved =
-                localStorage.getItem(
-                    "businessSettings"
-                );
+    const [error, setError] = useState("");
 
-            return saved
-                ? JSON.parse(saved)
-                : businessSettingsData;
-        });
+    const [settings, setSettings] = useState(() => {
+        const saved =
+            localStorage.getItem(
+                "businessSettings"
+            );
+
+        return saved
+            ? JSON.parse(saved)
+            : businessSettingsData;
+    });
 
     useEffect(() => {
         localStorage.setItem(
@@ -94,6 +90,11 @@ function BusinessDashboard() {
                     data.professionals ||
                         []
                 );
+
+                setServices(
+                    data.services ||
+                        []
+                );
             } catch (error) {
                 setError(
                     error.message
@@ -104,7 +105,12 @@ function BusinessDashboard() {
         };
 
     useEffect(() => {
-        fetchDashboard();
+        const loadDashboard =
+            async () => {
+                await fetchDashboard();
+            };
+
+        loadDashboard();
     }, []);
 
     const nextReservations =
@@ -199,10 +205,10 @@ function BusinessDashboard() {
                             <p className="mt-4 text-zinc-400 max-w-2xl leading-relaxed">
                                 Gestiona reservas,
                                 horarios,
-                                clientes y
-                                profesionales
-                                desde un solo
-                                lugar.
+                                clientes,
+                                profesionales y
+                                servicios desde
+                                un solo lugar.
                             </p>
                         </div>
 
@@ -221,13 +227,13 @@ function BusinessDashboard() {
                             <button
                                 onClick={() =>
                                     setActiveTab(
-                                        "schedule"
+                                        "services"
                                     )
                                 }
                                 className="bg-white/5 border border-white/10 hover:bg-white/10 px-6 py-3 rounded-2xl transition font-medium"
                             >
-                                Configurar
-                                horarios
+                                Gestionar
+                                servicios
                             </button>
                         </div>
                     </div>
@@ -355,6 +361,96 @@ function BusinessDashboard() {
                                                     )}
                                                 </div>
                                             </div>
+
+                                            <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8 backdrop-blur-xl">
+                                                <div className="flex items-center justify-between gap-4 flex-wrap">
+                                                    <div>
+                                                        <h2 className="text-2xl font-semibold">
+                                                            Servicios
+                                                            activos
+                                                        </h2>
+
+                                                        <p className="mt-2 text-zinc-400">
+                                                            Servicios
+                                                            disponibles
+                                                            para
+                                                            reservar.
+                                                        </p>
+                                                    </div>
+
+                                                    <button
+                                                        onClick={() =>
+                                                            setActiveTab(
+                                                                "services"
+                                                            )
+                                                        }
+                                                        className="bg-white/5 border border-white/10 hover:bg-white/10 px-5 py-3 rounded-2xl transition font-medium"
+                                                    >
+                                                        Gestionar
+                                                    </button>
+                                                </div>
+
+                                                <div className="mt-8 space-y-4">
+                                                    {services.length ===
+                                                    0 ? (
+                                                        <div className="bg-black/30 border border-white/10 rounded-2xl p-6 text-zinc-400">
+                                                            Aún
+                                                            no
+                                                            tienes
+                                                            servicios
+                                                            creados.
+                                                        </div>
+                                                    ) : (
+                                                        services
+                                                            .slice(
+                                                                0,
+                                                                3
+                                                            )
+                                                            .map(
+                                                                (
+                                                                    service
+                                                                ) => (
+                                                                    <div
+                                                                        key={
+                                                                            service.id
+                                                                        }
+                                                                        className="bg-black/30 border border-white/10 rounded-2xl p-5 flex items-center justify-between gap-5"
+                                                                    >
+                                                                        <div>
+                                                                            <h3 className="font-semibold">
+                                                                                {service.name}
+                                                                            </h3>
+
+                                                                            <p className="mt-2 text-zinc-400 text-sm">
+                                                                                {service.category ||
+                                                                                    "Sin categoría"}
+                                                                            </p>
+                                                                        </div>
+
+                                                                        <div className="text-right">
+                                                                            <p className="font-semibold">
+                                                                                $
+                                                                                {Number(
+                                                                                    service.price ||
+                                                                                        0
+                                                                                ).toLocaleString(
+                                                                                    "es-CL"
+                                                                                )}
+                                                                            </p>
+
+                                                                            <p className="mt-1 text-zinc-500 text-sm">
+                                                                                {
+                                                                                    service.duration_minutes
+                                                                                }{" "}
+                                                                                min
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+                                                                )
+                                                            )
+                                                    )}
+                                                </div>
+                                            </div>
                                         </div>
 
                                         <div className="space-y-8 min-w-0">
@@ -395,6 +491,30 @@ function BusinessDashboard() {
                                                         <p className="mt-2">
                                                             {business?.category ||
                                                                 "Sin categoría"}
+                                                        </p>
+                                                    </div>
+
+                                                    <div>
+                                                        <p className="text-zinc-500 text-sm">
+                                                            Profesionales
+                                                        </p>
+
+                                                        <p className="mt-2">
+                                                            {
+                                                                professionals.length
+                                                            }
+                                                        </p>
+                                                    </div>
+
+                                                    <div>
+                                                        <p className="text-zinc-500 text-sm">
+                                                            Servicios
+                                                        </p>
+
+                                                        <p className="mt-2">
+                                                            {
+                                                                services.length
+                                                            }
                                                         </p>
                                                     </div>
 
@@ -461,6 +581,18 @@ function BusinessDashboard() {
                                         }
                                         professionals={
                                             professionals
+                                        }
+                                        refreshDashboard={
+                                            fetchDashboard
+                                        }
+                                    />
+                                )}
+
+                                {activeTab ===
+                                    "services" && (
+                                    <ServicesManager
+                                        services={
+                                            services
                                         }
                                         refreshDashboard={
                                             fetchDashboard

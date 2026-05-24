@@ -24,6 +24,11 @@ function BusinessSidebar({
             label: "Profesionales",
             icon: "💈",
         },
+        {
+            id: "services",
+            label: "Servicios",
+            icon: "🧾",
+        },
     ];
 
     return (
@@ -50,7 +55,6 @@ function BusinessSidebar({
                     top-28
                 "
             >
-                {/* BUSINESS */}
                 <div className="flex items-center gap-4">
                     <div
                         className="
@@ -85,13 +89,11 @@ function BusinessSidebar({
                         </h2>
 
                         <p className="text-zinc-400 text-sm mt-1">
-                            {business?.category ||
-                                "Negocio verificado"}
+                            {business?.category || "Negocio verificado"}
                         </p>
                     </div>
                 </div>
 
-                {/* STATUS */}
                 <div
                     className="
                         mt-6
@@ -109,18 +111,14 @@ function BusinessSidebar({
                     "
                 >
                     <div className="w-2 h-2 rounded-full bg-green-400"></div>
-
                     Negocio activo
                 </div>
 
-                {/* NAVIGATION */}
                 <div className="mt-8 space-y-3">
                     {items.map((item) => (
                         <button
                             key={item.id}
-                            onClick={() =>
-                                setActiveTab(item.id)
-                            }
+                            onClick={() => setActiveTab(item.id)}
                             className={
                                 `
                                     w-full
@@ -150,9 +148,7 @@ function BusinessSidebar({
                                         `)
                             }
                         >
-                            <span className="text-xl">
-                                {item.icon}
-                            </span>
+                            <span className="text-xl">{item.icon}</span>
 
                             <span className="font-medium">
                                 {item.label}
@@ -161,10 +157,8 @@ function BusinessSidebar({
                     ))}
                 </div>
 
-                {/* DIVIDER */}
                 <div className="my-8 h-px bg-white/10"></div>
 
-                {/* BUSINESS DESCRIPTION */}
                 <div
                     className="
                         bg-black/30
@@ -180,11 +174,10 @@ function BusinessSidebar({
 
                     <p className="mt-3 text-sm text-zinc-300 leading-relaxed">
                         {business?.description ||
-                            "Administra reservas, horarios y profesionales desde este panel."}
+                            "Administra reservas, horarios, profesionales y servicios desde este panel."}
                     </p>
                 </div>
 
-                {/* FOOTER */}
                 <div className="mt-8">
                     <div
                         className="
@@ -204,9 +197,8 @@ function BusinessSidebar({
                         </h3>
 
                         <p className="mt-2 text-zinc-400 text-sm leading-relaxed">
-                            Gestiona tu negocio,
-                            reservas y profesionales
-                            desde un solo lugar.
+                            Gestiona tu negocio, reservas,
+                            profesionales y servicios desde un solo lugar.
                         </p>
                     </div>
                 </div>

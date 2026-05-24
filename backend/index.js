@@ -27,6 +27,9 @@ from "./middlewares/errorMiddleware.js";
 import businessRoutes
 from "./routes/businessRoutes.js";
 
+import serviceRoutes
+from "./routes/serviceRoutes.js";
+
 const app = express();
 
 app.use(cors());
@@ -41,6 +44,8 @@ app.use(reservationRoutes);
 app.use(professionalRoutes);
 
 app.use(businessRoutes);
+
+app.use("/", serviceRoutes);
 
 // TEST DB
 app.get(
