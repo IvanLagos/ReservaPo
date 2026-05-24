@@ -85,8 +85,7 @@ router.get("/business/dashboard", verifyToken, async (req, res, next) => {
             ON p.id = r.professional_id
             WHERE r.business_id = $1
             ORDER BY
-                r.reservation_date ASC,
-                r.reservation_time ASC
+            r.id DESC
             `,
             [business.id]
         );

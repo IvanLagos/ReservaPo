@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 import Navbar from "../components/Navbar";
 
 const API_URL = "https://reservapo.onrender.com";
 
 function MyReservations() {
+  const location = useLocation();
+
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [cancellingId, setCancellingId] = useState(null);
@@ -55,23 +57,23 @@ function MyReservations() {
     }
 
     loadReservations();
-  }, []);
+  }, [location.key]);
 
-  const showSuccess = (message) => {
+  function showSuccess(message) {
     setSuccessMessage(message);
 
     setTimeout(() => {
       setSuccessMessage("");
     }, 4000);
-  };
+  }
 
-  const showError = (message) => {
+  function showError(message) {
     setErrorMessage(message);
 
     setTimeout(() => {
       setErrorMessage("");
     }, 4000);
-  };
+  }
 
   async function handleCancelReservation(id) {
     const confirmed = window.confirm(
@@ -108,7 +110,7 @@ function MyReservations() {
           reservation.id === id
             ? {
                 ...reservation,
-                status: "cancelled",
+                status: "Cancelada",
               }
             : reservation
         )
@@ -122,10 +124,28 @@ function MyReservations() {
     }
   }
 
-  function getStatusBadge(status) {
-    const normalized = status?.toLowerCase();
+  function normalizeStatus(status) {
+    const value = String(status || "").toLowerCase();
 
-    if (normalized === "cancelled") {
+    if (value === "confirmed" || value === "confirmada") {
+      return "Confirmada";
+    }
+
+    if (value === "cancelled" || value === "cancelada") {
+      return "Cancelada";
+    }
+
+    return "Pendiente";
+  }
+
+  function isCancelled(status) {
+    return normalizeStatus(status) === "Cancelada";
+  }
+
+  function getStatusBadge(status) {
+    const normalized = normalizeStatus(status);
+
+    if (normalized === "Cancelada") {
       return (
         <div className="inline-flex items-center gap-2 bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-2 rounded-full text-sm">
           ✖ Cancelada
@@ -133,7 +153,7 @@ function MyReservations() {
       );
     }
 
-    if (normalized === "confirmed" || normalized === "confirmada") {
+    if (normalized === "Confirmada") {
       return (
         <div className="inline-flex items-center gap-2 bg-green-500/10 border border-green-500/20 text-green-400 px-4 py-2 rounded-full text-sm">
           ✔ Confirmada
@@ -151,17 +171,18 @@ function MyReservations() {
   function formatDate(date) {
     if (!date) return "Sin fecha";
 
-    return new Date(date).toLocaleDateString("es-CL", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
+    const cleanDate = String(date).slice(0, 10);
+    const [year, month, day] = cleanDate.split("-");
+
+    if (!year || !month || !day) return cleanDate;
+
+    return `${day}-${month}-${year}`;
   }
 
   function formatTime(time) {
     if (!time) return "Sin hora";
 
-    return time.toString().slice(0, 5);
+    return String(time).slice(0, 5);
   }
 
   return (
@@ -179,7 +200,6 @@ function MyReservations() {
       )}
 
       <div className="fixed top-[-200px] left-[-200px] w-[500px] h-[500px] bg-violet-600 opacity-20 blur-[120px] rounded-full pointer-events-none -z-10"></div>
-
       <div className="fixed bottom-[-200px] right-[-200px] w-[500px] h-[500px] bg-fuchsia-600 opacity-20 blur-[120px] rounded-full pointer-events-none -z-10"></div>
 
       <Navbar />
@@ -243,14 +263,13 @@ function MyReservations() {
           {!loading && reservations.length > 0 && (
             <div className="mt-16 grid gap-8">
               {reservations.map((reservation) => {
-                const isCancelled =
-                  reservation.status?.toLowerCase() === "cancelled";
+                const cancelled = isCancelled(reservation.status);
 
                 return (
                   <div
                     key={reservation.id}
                     className={`bg-white/5 border rounded-[2rem] backdrop-blur-xl overflow-hidden transition ${
-                      isCancelled
+                      cancelled
                         ? "border-red-500/20 opacity-70"
                         : "border-white/10"
                     }`}
@@ -293,9 +312,7 @@ function MyReservations() {
                             </div>
 
                             <div className="bg-black/30 border border-white/10 rounded-2xl p-5">
-                              <p className="text-zinc-500 text-sm">
-                                Fecha
-                              </p>
+                              <p className="text-zinc-500 text-sm">Fecha</p>
 
                               <h3 className="mt-2 text-xl font-semibold">
                                 {formatDate(reservation.reservation_date)}
@@ -303,9 +320,7 @@ function MyReservations() {
                             </div>
 
                             <div className="bg-black/30 border border-white/10 rounded-2xl p-5">
-                              <p className="text-zinc-500 text-sm">
-                                Hora
-                              </p>
+                              <p className="text-zinc-500 text-sm">Hora</p>
 
                               <h3 className="mt-2 text-xl font-semibold">
                                 {formatTime(reservation.reservation_time)}
@@ -334,19 +349,15 @@ function MyReservations() {
 
                             <h3
                               className={`mt-2 text-3xl font-semibold ${
-                                isCancelled
-                                  ? "text-red-400"
-                                  : "text-violet-400"
+                                cancelled ? "text-red-400" : "text-violet-400"
                               }`}
                             >
-                              {isCancelled
-                                ? "Cancelada"
-                                : reservation.status || "Pendiente"}
+                              {normalizeStatus(reservation.status)}
                             </h3>
                           </div>
 
                           <div className="flex flex-wrap gap-4">
-                            {!isCancelled && (
+                            {!cancelled && (
                               <Link
                                 to={`/rebook/${reservation.id}/${reservation.business_id}/0`}
                                 className="bg-violet-500/10 border border-violet-500/20 text-violet-300 hover:bg-violet-500/20 px-6 py-3 rounded-2xl transition"
@@ -355,7 +366,7 @@ function MyReservations() {
                               </Link>
                             )}
 
-                            {!isCancelled ? (
+                            {!cancelled ? (
                               <button
                                 onClick={() =>
                                   handleCancelReservation(reservation.id)
