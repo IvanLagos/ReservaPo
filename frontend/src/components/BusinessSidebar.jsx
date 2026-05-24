@@ -1,5 +1,9 @@
-function BusinessSidebar({ activeTab, setActiveTab }) {
-
+function BusinessSidebar({
+    activeTab,
+    setActiveTab,
+    business,
+    stats,
+}) {
     const items = [
         {
             id: "dashboard",
@@ -35,8 +39,6 @@ function BusinessSidebar({ activeTab, setActiveTab }) {
                 pb-10
             "
         >
-
-            {/* CARD */}
             <div
                 className="
                     bg-white/5
@@ -49,15 +51,14 @@ function BusinessSidebar({ activeTab, setActiveTab }) {
                     top-28
                 "
             >
-
                 {/* BUSINESS */}
                 <div className="flex items-center gap-4">
-
                     <div
                         className="
                             w-16
                             h-16
                             rounded-2xl
+                            overflow-hidden
                             bg-gradient-to-br
                             from-violet-500
                             to-fuchsia-500
@@ -68,27 +69,26 @@ function BusinessSidebar({ activeTab, setActiveTab }) {
                             shadow-lg
                         "
                     >
-
-                        ✂️
-
+                        {business?.image_url ? (
+                            <img
+                                src={business.image_url}
+                                alt={business.name}
+                                className="w-full h-full object-cover"
+                            />
+                        ) : (
+                            "✂️"
+                        )}
                     </div>
 
-                    <div>
-
-                        <h2 className="text-lg font-semibold">
-
-                            Luxury Barber
-
+                    <div className="min-w-0">
+                        <h2 className="text-lg font-semibold truncate">
+                            {business?.name || "Mi negocio"}
                         </h2>
 
                         <p className="text-zinc-400 text-sm mt-1">
-
-                            Negocio verificado
-
+                            {business?.category || "Negocio verificado"}
                         </p>
-
                     </div>
-
                 </div>
 
                 {/* STATUS */}
@@ -108,18 +108,14 @@ function BusinessSidebar({ activeTab, setActiveTab }) {
                         gap-2
                     "
                 >
-
                     <div className="w-2 h-2 rounded-full bg-green-400"></div>
 
                     Negocio activo
-
                 </div>
 
                 {/* NAVIGATION */}
                 <div className="mt-8 space-y-3">
-
                     {items.map((item) => (
-
                         <button
                             key={item.id}
                             onClick={() => setActiveTab(item.id)}
@@ -136,41 +132,31 @@ function BusinessSidebar({ activeTab, setActiveTab }) {
                                     duration-300
                                     border
                                 ` +
-                                (
-                                    activeTab === item.id
-                                        ? `
+                                (activeTab === item.id
+                                    ? `
                                             bg-white
                                             text-black
                                             border-white
                                             shadow-lg
                                         `
-                                        : `
+                                    : `
                                             bg-white/5
                                             border-white/10
                                             hover:bg-white/10
                                             hover:border-violet-500/40
                                             text-white
-                                        `
-                                )
+                                        `)
                             }
                         >
-
                             <span className="text-xl">
-
                                 {item.icon}
-
                             </span>
 
                             <span className="font-medium">
-
                                 {item.label}
-
                             </span>
-
                         </button>
-
                     ))}
-
                 </div>
 
                 {/* DIVIDER */}
@@ -178,7 +164,6 @@ function BusinessSidebar({ activeTab, setActiveTab }) {
 
                 {/* QUICK INFO */}
                 <div className="space-y-5">
-
                     <div
                         className="
                             bg-black/30
@@ -188,19 +173,13 @@ function BusinessSidebar({ activeTab, setActiveTab }) {
                             p-5
                         "
                     >
-
                         <p className="text-zinc-500 text-sm">
-
                             Reservas hoy
-
                         </p>
 
                         <h3 className="mt-3 text-3xl font-semibold">
-
-                            12
-
+                            {stats?.todayReservations || 0}
                         </h3>
-
                     </div>
 
                     <div
@@ -212,30 +191,59 @@ function BusinessSidebar({ activeTab, setActiveTab }) {
                             p-5
                         "
                     >
-
                         <p className="text-zinc-500 text-sm">
-
-                            Clientes esta semana
-
+                            Profesionales
                         </p>
 
                         <h3 className="mt-3 text-3xl font-semibold">
-
-                            48
-
+                            {stats?.professionals || 0}
                         </h3>
-
                     </div>
 
+                    <div
+                        className="
+                            bg-black/30
+                            border
+                            border-white/10
+                            rounded-2xl
+                            p-5
+                        "
+                    >
+                        <p className="text-zinc-500 text-sm">
+                            Confirmadas
+                        </p>
+
+                        <h3 className="mt-3 text-3xl font-semibold text-green-400">
+                            {stats?.confirmed || 0}
+                        </h3>
+                    </div>
                 </div>
 
                 {/* FOOTER */}
                 <div className="mt-8">
+                    <div
+                        className="
+                            bg-violet-500/10
+                            border
+                            border-violet-500/20
+                            rounded-2xl
+                            p-5
+                        "
+                    >
+                        <p className="text-violet-300 text-sm">
+                            Ocupación actual
+                        </p>
 
+                        <h3 className="mt-3 text-4xl font-bold">
+                            {stats?.occupation || 0}%
+                        </h3>
+
+                        <p className="mt-2 text-zinc-400 text-sm">
+                            Basado en reservas activas.
+                        </p>
+                    </div>
                 </div>
-
             </div>
-
         </aside>
     );
 }

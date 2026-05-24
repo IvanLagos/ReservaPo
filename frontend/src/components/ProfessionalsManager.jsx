@@ -1,503 +1,303 @@
 import { useState } from "react";
 
-function ProfessionalsManager() {
+const API_URL = "https://reservapo.onrender.com";
 
+function ProfessionalsManager({
+    business,
+    professionals = [],
+    refreshDashboard,
+}) {
     const defaultAvatar =
         "https://cdn-icons-png.flaticon.com/512/149/149071.png";
 
     const [showModal, setShowModal] = useState(false);
-
     const [editingId, setEditingId] = useState(null);
+    const [saving, setSaving] = useState(false);
 
-    const [professionals, setProfessionals] = useState(() => {
-
-        const savedProfessionals = JSON.parse(
-            localStorage.getItem("businessProfessionals")
-        );
-
-        if (savedProfessionals) {
-
-            return savedProfessionals;
-
-        }
-
-        return [
-            {
-                id: 1,
-                name: "Sebastián Morales",
-                specialty: "Barbero Premium",
-                experience: "6 años",
-                phone: "+56 9 1234 5678",
-                image:
-                    "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=1200&auto=format&fit=crop",
-            },
-            {
-                id: 2,
-                name: "Valentina Pérez",
-                specialty: "Colorista Profesional",
-                experience: "8 años",
-                phone: "+56 9 9999 2222",
-                image:
-                    "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=1200&auto=format&fit=crop",
-            },
-        ];
-
-    });
-
-    const [newProfessional, setNewProfessional] = useState({
+    const [form, setForm] = useState({
         name: "",
         specialty: "",
-        experience: "",
         phone: "",
-        image: "",
+        image_url: "",
     });
 
-    // SAVE
-    const saveProfessionals = (updatedProfessionals) => {
+    const token = localStorage.getItem("token");
 
-        setProfessionals(updatedProfessionals);
+    function resetModal() {
+        setEditingId(null);
+        setShowModal(false);
 
-        localStorage.setItem(
-            "businessProfessionals",
-            JSON.stringify(updatedProfessionals)
-        );
+        setForm({
+            name: "",
+            specialty: "",
+            phone: "",
+            image_url: "",
+        });
+    }
 
-    };
+    function openCreateModal() {
+        setEditingId(null);
 
-    // CREATE
-    const createProfessional = () => {
-
-        if (
-            !newProfessional.name ||
-            !newProfessional.specialty
-        ) {
-
-            alert("Completa los campos obligatorios.");
-
-            return;
-
-        }
-
-        const professional = {
-            id: crypto.randomUUID(),
-            name: newProfessional.name,
-            specialty: newProfessional.specialty,
-            experience:
-                newProfessional.experience || "No especificado",
-            phone:
-                newProfessional.phone || "No especificado",
-            image:
-                newProfessional.image || defaultAvatar,
-        };
-
-        const updated = [
-            professional,
-            ...professionals,
-        ];
-
-        saveProfessionals(updated);
-
-        resetModal();
-
-    };
-
-    // EDIT
-    const editProfessional = (professional) => {
-
-        setEditingId(professional.id);
-
-        setNewProfessional({
-            name: professional.name,
-            specialty: professional.specialty,
-            experience: professional.experience,
-            phone: professional.phone,
-            image:
-                professional.image === defaultAvatar
-                    ? ""
-                    : professional.image,
+        setForm({
+            name: "",
+            specialty: "",
+            phone: "",
+            image_url: "",
         });
 
         setShowModal(true);
+    }
 
-    };
+    function openEditModal(professional) {
+        setEditingId(professional.id);
 
-    // UPDATE
-    const updateProfessional = () => {
-
-        const updated = professionals.map((professional) => {
-
-            if (professional.id === editingId) {
-
-                return {
-                    ...professional,
-                    name: newProfessional.name,
-                    specialty: newProfessional.specialty,
-                    experience:
-                        newProfessional.experience ||
-                        "No especificado",
-                    phone:
-                        newProfessional.phone ||
-                        "No especificado",
-                    image:
-                        newProfessional.image ||
-                        defaultAvatar,
-                };
-
-            }
-
-            return professional;
-
+        setForm({
+            name: professional.name || "",
+            specialty: professional.specialty || "",
+            phone: professional.phone || "",
+            image_url:
+                professional.image_url ||
+                professional.image ||
+                "",
         });
 
-        saveProfessionals(updated);
+        setShowModal(true);
+    }
 
-        resetModal();
+    async function saveProfessional() {
+        try {
+            setSaving(true);
 
-    };
+            if (!business?.id) {
+                alert("No se encontró el negocio asociado.");
+                return;
+            }
 
-    // DELETE
-    const deleteProfessional = (id) => {
+            if (!form.name || !form.specialty) {
+                alert("Nombre y especialidad son obligatorios.");
+                return;
+            }
 
+            const payload = {
+                business_id: business.id,
+                name: form.name,
+                specialty: form.specialty,
+                phone: form.phone,
+                image_url: form.image_url,
+            };
+
+            const url = editingId
+                ? `${API_URL}/professionals/${editingId}`
+                : `${API_URL}/professionals`;
+
+            const method = editingId ? "PUT" : "POST";
+
+            const response = await fetch(url, {
+                method,
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(payload),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    data.error || "No se pudo guardar el profesional"
+                );
+            }
+
+            resetModal();
+            await refreshDashboard();
+        } catch (error) {
+            alert(error.message);
+        } finally {
+            setSaving(false);
+        }
+    }
+
+    async function deleteProfessional(id) {
         const confirmDelete = window.confirm(
-            "¿Eliminar este profesional?"
+            "¿Seguro que deseas eliminar este profesional?"
         );
 
         if (!confirmDelete) return;
 
-        const updated = professionals.filter(
-            (professional) =>
-                professional.id !== id
-        );
+        try {
+            const response = await fetch(
+                `${API_URL}/professionals/${id}`,
+                {
+                    method: "DELETE",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
 
-        saveProfessionals(updated);
+            const data = await response.json();
 
-    };
+            if (!response.ok) {
+                throw new Error(
+                    data.error || "No se pudo eliminar el profesional"
+                );
+            }
 
-    // RESET MODAL
-    const resetModal = () => {
-
-        setEditingId(null);
-
-        setShowModal(false);
-
-        setNewProfessional({
-            name: "",
-            specialty: "",
-            experience: "",
-            phone: "",
-            image: "",
-        });
-
-    };
+            await refreshDashboard();
+        } catch (error) {
+            alert(error.message);
+        }
+    }
 
     return (
         <div className="space-y-8">
-
-            {/* HEADER */}
-            <div
-                className="
-                    bg-white/5
-                    border
-                    border-white/10
-                    rounded-[2rem]
-                    p-8
-                    backdrop-blur-xl
-                "
-            >
-
+            <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8 backdrop-blur-xl">
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-
                     <div>
-
                         <div className="inline-flex items-center gap-2 bg-violet-500/10 border border-violet-500/20 text-violet-300 px-5 py-2 rounded-full text-sm">
-
                             💈 Gestión de profesionales
-
                         </div>
 
                         <h2 className="mt-5 text-3xl font-semibold">
-
                             Equipo del negocio
-
                         </h2>
 
                         <p className="mt-3 text-zinc-400 max-w-2xl">
-
-                            Administra trabajadores, imágenes,
-                            especialidades y perfiles del negocio.
-
+                            Administra profesionales reales conectados a Neon.
                         </p>
-
                     </div>
 
                     <button
-                        onClick={() => setShowModal(true)}
-                        className="
-                            bg-violet-500
-                            hover:bg-violet-400
-                            text-white
-                            px-6
-                            py-4
-                            rounded-2xl
-                            transition
-                            font-medium
-                        "
+                        onClick={openCreateModal}
+                        className="bg-violet-500 hover:bg-violet-400 text-white px-6 py-4 rounded-2xl transition font-medium"
                     >
-
                         + Agregar profesional
-
                     </button>
-
                 </div>
-
             </div>
 
-            {/* GRID */}
-            <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-8">
-
-                {professionals.map((professional) => (
-
-                    <div
-                        key={professional.id}
-                        className="
-                            bg-white/5
-                            border
-                            border-white/10
-                            rounded-[2rem]
-                            overflow-hidden
-                            backdrop-blur-xl
-                        "
-                    >
-
-                        {/* IMAGE */}
-                        <div className="relative">
-
-                            <img
-                                src={
-                                    professional.image ||
-                                    defaultAvatar
-                                }
-                                alt={professional.name}
-                                className="w-full h-[320px] object-cover"
-                            />
-
-                            {professional.image ===
-                                defaultAvatar && (
-
-                                    <div
-                                        className="
-                                            absolute
-                                            inset-0
-                                            bg-black/50
-                                            flex
-                                            items-center
-                                            justify-center
-                                            text-white
-                                            text-lg
-                                            font-medium
-                                        "
-                                    >
-
-                                        Imagen pendiente
-
-                                    </div>
-
-                                )}
-
-                        </div>
-
-                        {/* INFO */}
-                        <div className="p-6">
-
-                            <h3 className="text-2xl font-semibold">
-
-                                {professional.name}
-
-                            </h3>
-
-                            <p className="mt-3 text-violet-400">
-
-                                {professional.specialty}
-
-                            </p>
-
-                            <div className="mt-6 space-y-4 text-zinc-400">
-
-                                <div>
-
-                                    <p className="text-zinc-500 text-sm">
-
-                                        Experiencia
-
-                                    </p>
-
-                                    <p className="mt-1">
-
-                                        {professional.experience}
-
-                                    </p>
-
-                                </div>
-
-                                <div>
-
-                                    <p className="text-zinc-500 text-sm">
-
-                                        Teléfono
-
-                                    </p>
-
-                                    <p className="mt-1">
-
-                                        {professional.phone}
-
-                                    </p>
-
-                                </div>
-
-                            </div>
-
-                            {/* ACTIONS */}
-                            <div className="mt-8 flex gap-4">
-
-                                <button
-                                    onClick={() =>
-                                        editProfessional(
-                                            professional
-                                        )
-                                    }
-                                    className="
-                                        flex-1
-                                        bg-white/5
-                                        border
-                                        border-white/10
-                                        hover:bg-white/10
-                                        py-3
-                                        rounded-2xl
-                                        transition
-                                    "
-                                >
-
-                                    Editar
-
-                                </button>
-
-                                <button
-                                    onClick={() =>
-                                        deleteProfessional(
-                                            professional.id
-                                        )
-                                    }
-                                    className="
-                                        flex-1
-                                        bg-red-500/10
-                                        border
-                                        border-red-500/20
-                                        text-red-400
-                                        hover:bg-red-500/20
-                                        py-3
-                                        rounded-2xl
-                                        transition
-                                    "
-                                >
-
-                                    Eliminar
-
-                                </button>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                ))}
-
-            </div>
-
-            {/* EMPTY */}
-            {professionals.length === 0 && (
-
-                <div
-                    className="
-                        bg-white/5
-                        border
-                        border-white/10
-                        rounded-[2rem]
-                        p-20
-                        text-center
-                    "
-                >
-
-                    <div className="text-7xl">
-
-                        👥
-
-                    </div>
+            {professionals.length === 0 ? (
+                <div className="bg-white/5 border border-white/10 rounded-[2rem] p-20 text-center">
+                    <div className="text-7xl">👥</div>
 
                     <h2 className="mt-8 text-4xl font-semibold">
-
                         No hay profesionales
-
                     </h2>
 
                     <p className="mt-4 text-zinc-400">
-
-                        Agrega profesionales para comenzar.
-
+                        Agrega profesionales para comenzar a recibir reservas.
                     </p>
-
                 </div>
+            ) : (
+                <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-8">
+                    {professionals.map((professional) => {
+                        const image =
+                            professional.image_url ||
+                            professional.image ||
+                            defaultAvatar;
 
+                        return (
+                            <div
+                                key={professional.id}
+                                className="bg-white/5 border border-white/10 rounded-[2rem] overflow-hidden backdrop-blur-xl"
+                            >
+                                <div className="relative">
+                                    <img
+                                        src={image}
+                                        alt={professional.name}
+                                        className="w-full h-[320px] object-cover"
+                                    />
+
+                                    {image === defaultAvatar && (
+                                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white text-lg font-medium">
+                                            Imagen pendiente
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="p-6">
+                                    <h3 className="text-2xl font-semibold">
+                                        {professional.name}
+                                    </h3>
+
+                                    <p className="mt-3 text-violet-400">
+                                        {professional.specialty}
+                                    </p>
+
+                                    <div className="mt-6 space-y-4 text-zinc-400">
+                                        <div>
+                                            <p className="text-zinc-500 text-sm">
+                                                Teléfono
+                                            </p>
+
+                                            <p className="mt-1">
+                                                {professional.phone ||
+                                                    "No especificado"}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-8 flex gap-4">
+                                        <button
+                                            onClick={() =>
+                                                openEditModal(professional)
+                                            }
+                                            className="flex-1 bg-white/5 border border-white/10 hover:bg-white/10 py-3 rounded-2xl transition"
+                                        >
+                                            Editar
+                                        </button>
+
+                                        <button
+                                            onClick={() =>
+                                                deleteProfessional(
+                                                    professional.id
+                                                )
+                                            }
+                                            className="flex-1 bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 py-3 rounded-2xl transition"
+                                        >
+                                            Eliminar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
             )}
 
-            {/* MODAL */}
             {showModal && (
-
                 <div className="fixed inset-0 z-[999] bg-black/70 backdrop-blur-md flex items-center justify-center px-6">
-
                     <div className="w-full max-w-2xl bg-zinc-950 border border-white/10 rounded-[2rem] p-8">
-
                         <div className="flex items-center justify-between gap-4">
-
                             <div>
-
                                 <h2 className="text-3xl font-semibold">
-
                                     {editingId
                                         ? "Editar profesional"
                                         : "Nuevo profesional"}
-
                                 </h2>
 
                                 <p className="mt-2 text-zinc-400">
-
-                                    Gestiona trabajadores del negocio.
-
+                                    Completa los datos del profesional.
                                 </p>
-
                             </div>
 
                             <button
                                 onClick={resetModal}
                                 className="text-zinc-400 hover:text-white text-3xl"
                             >
-
                                 ×
-
                             </button>
-
                         </div>
 
                         <div className="mt-10 grid md:grid-cols-2 gap-5">
-
                             <input
                                 type="text"
                                 placeholder="Nombre"
-                                value={newProfessional.name}
+                                value={form.name}
                                 onChange={(e) =>
-                                    setNewProfessional({
-                                        ...newProfessional,
+                                    setForm({
+                                        ...form,
                                         name: e.target.value,
                                     })
                                 }
@@ -507,10 +307,10 @@ function ProfessionalsManager() {
                             <input
                                 type="text"
                                 placeholder="Especialidad"
-                                value={newProfessional.specialty}
+                                value={form.specialty}
                                 onChange={(e) =>
-                                    setNewProfessional({
-                                        ...newProfessional,
+                                    setForm({
+                                        ...form,
                                         specialty: e.target.value,
                                     })
                                 }
@@ -519,24 +319,11 @@ function ProfessionalsManager() {
 
                             <input
                                 type="text"
-                                placeholder="Experiencia"
-                                value={newProfessional.experience}
-                                onChange={(e) =>
-                                    setNewProfessional({
-                                        ...newProfessional,
-                                        experience: e.target.value,
-                                    })
-                                }
-                                className="bg-black/30 border border-white/10 rounded-2xl px-5 py-4 outline-none"
-                            />
-
-                            <input
-                                type="text"
                                 placeholder="Teléfono"
-                                value={newProfessional.phone}
+                                value={form.phone}
                                 onChange={(e) =>
-                                    setNewProfessional({
-                                        ...newProfessional,
+                                    setForm({
+                                        ...form,
                                         phone: e.target.value,
                                     })
                                 }
@@ -545,53 +332,37 @@ function ProfessionalsManager() {
 
                             <input
                                 type="text"
-                                placeholder="URL imagen (opcional)"
-                                value={newProfessional.image}
+                                placeholder="URL imagen"
+                                value={form.image_url}
                                 onChange={(e) =>
-                                    setNewProfessional({
-                                        ...newProfessional,
-                                        image: e.target.value,
+                                    setForm({
+                                        ...form,
+                                        image_url: e.target.value,
                                     })
                                 }
-                                className="md:col-span-2 bg-black/30 border border-white/10 rounded-2xl px-5 py-4 outline-none"
+                                className="bg-black/30 border border-white/10 rounded-2xl px-5 py-4 outline-none"
                             />
-
                         </div>
 
                         <div className="mt-10 flex justify-end gap-4">
-
                             <button
                                 onClick={resetModal}
                                 className="bg-white/5 border border-white/10 hover:bg-white/10 px-6 py-4 rounded-2xl transition"
                             >
-
                                 Cancelar
-
                             </button>
 
                             <button
-                                onClick={
-                                    editingId
-                                        ? updateProfessional
-                                        : createProfessional
-                                }
-                                className="bg-violet-500 hover:bg-violet-400 px-8 py-4 rounded-2xl transition font-medium"
+                                onClick={saveProfessional}
+                                disabled={saving}
+                                className="bg-violet-500 hover:bg-violet-400 px-8 py-4 rounded-2xl transition font-medium disabled:opacity-50"
                             >
-
-                                {editingId
-                                    ? "Guardar cambios"
-                                    : "Crear profesional"}
-
+                                {saving ? "Guardando..." : "Guardar"}
                             </button>
-
                         </div>
-
                     </div>
-
                 </div>
-
             )}
-
         </div>
     );
 }

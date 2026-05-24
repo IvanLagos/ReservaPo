@@ -1,136 +1,97 @@
 import express from "express";
 
-import { pool }
-from "../consultas.js";
+import { pool } from "../consultas.js";
 
 import {
     verifyToken,
-}
-from "../middlewares/authMiddleware.js";
+} from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
-// LISTAR NEGOCIOS PÚBLICOS
+// GET PUBLIC BUSINESSES
 router.get(
-
     "/businesses",
-
     async (req, res, next) => {
-
         try {
+            const result = await pool.query(
+                `
+                SELECT
+                    id,
+                    user_id,
+                    name,
+                    category,
+                    city,
+                    description,
+                    image_url
+                FROM businesses
+                ORDER BY id ASC
+                `
+            );
 
-            const result =
-                await pool.query(
+            const businesses = result.rows.map(
+                (business) => ({
+                    ...business,
 
-                    `
-                    SELECT
+                    rating: 4.9,
 
-                        id,
-                        user_id,
-                        name,
-                        category,
-                        city,
-                        description,
-                        image_url
+                    reviews: 120,
 
-                    FROM businesses
-
-                    ORDER BY id ASC
-                    `
-
-                );
-
-            const businesses =
-                result.rows.map(
-                    (business) => ({
-
-                        ...business,
-
-                        rating: 4.9,
-
-                        reviews: 120,
-
-                        services: [
-                            {
-                                name: "Corte clásico",
-                                price: "$12.000",
-                            },
-                            {
-                                name: "Corte + barba",
-                                price: "$18.000",
-                            },
-                            {
-                                name: "Perfilado de barba",
-                                price: "$10.000",
-                            },
-                        ],
-
-                    })
-                );
+                    services: [
+                        {
+                            name: "Corte clásico",
+                            price: "$12.000",
+                        },
+                        {
+                            name: "Corte + barba",
+                            price: "$18.000",
+                        },
+                        {
+                            name: "Perfilado de barba",
+                            price: "$10.000",
+                        },
+                    ],
+                })
+            );
 
             res.json({
-
                 businesses,
-
             });
-
         } catch (error) {
-
             next(error);
-
         }
-
     }
-
 );
 
-// DASHBOARD NEGOCIO
+// BUSINESS DASHBOARD
 router.get(
-
     "/business/dashboard",
-
     verifyToken,
-
     async (req, res, next) => {
-
         try {
-
-            const businessResult =
-                await pool.query(
-
-                    `
-                    SELECT
-
-                        id,
-                        user_id,
-                        name,
-                        category,
-                        city,
-                        description,
-                        image_url
-
-                    FROM businesses
-
-                    WHERE user_id = $1
-
-                    LIMIT 1
-                    `,
-
-                    [req.user.id]
-
-                );
+            const businessResult = await pool.query(
+                `
+                SELECT
+                    id,
+                    user_id,
+                    name,
+                    category,
+                    city,
+                    description,
+                    image_url
+                FROM businesses
+                WHERE user_id = $1
+                LIMIT 1
+                `,
+                [req.user.id]
+            );
 
             if (
                 businessResult.rows.length === 0
             ) {
-
                 return res.status(404).json({
-
                     error:
                         "No tienes un negocio asociado",
-
                 });
-
             }
 
             const business =
@@ -138,33 +99,29 @@ router.get(
 
             const reservationsResult =
                 await pool.query(
-
                     `
                     SELECT
-
                         r.id,
                         r.business_id,
                         r.user_id,
                         r.professional_id,
 
-                        r.reservation_date
-                        AS date,
+                        r.reservation_date AS date,
 
-                        r.reservation_time
-                        AS time,
+                        TO_CHAR(
+                            r.reservation_time,
+                            'HH24:MI'
+                        ) AS time,
 
                         r.service,
                         r.status,
                         r.payment_status,
 
-                        u.name
-                        AS client_name,
+                        u.name AS client_name,
 
-                        p.name
-                        AS professional_name,
+                        p.name AS professional_name,
 
-                        p.specialty
-                        AS professional_specialty
+                        p.specialty AS professional_specialty
 
                     FROM reservations r
 
@@ -177,33 +134,87 @@ router.get(
                     WHERE r.business_id = $1
 
                     ORDER BY
-
                         r.reservation_date ASC,
-
                         r.reservation_time ASC
                     `,
-
                     [business.id]
-
                 );
 
-            res.json({
+            const professionalsResult =
+                await pool.query(
+                    `
+                    SELECT
+                        id,
+                        business_id,
+                        name,
+                        specialty,
+                        phone,
+                        image_url
+                    FROM professionals
+                    WHERE business_id = $1
+                    ORDER BY id ASC
+                    `,
+                    [business.id]
+                );
 
+            const stats = {
+                totalReservations:
+                    reservationsResult.rows.length,
+
+                confirmedReservations:
+                    reservationsResult.rows.filter(
+                        (reservation) =>
+                            String(
+                                reservation.status || ""
+                            ).toLowerCase() ===
+                            "confirmed"
+                    ).length,
+
+                cancelledReservations:
+                    reservationsResult.rows.filter(
+                        (reservation) =>
+                            String(
+                                reservation.status || ""
+                            ).toLowerCase() ===
+                            "cancelled"
+                    ).length,
+
+                pendingReservations:
+                    reservationsResult.rows.filter(
+                        (reservation) => {
+                            const status =
+                                String(
+                                    reservation.status || ""
+                                ).toLowerCase();
+
+                            return (
+                                status !==
+                                    "confirmed" &&
+                                status !==
+                                    "cancelled"
+                            );
+                        }
+                    ).length,
+
+                totalProfessionals:
+                    professionalsResult.rows.length,
+            };
+
+            res.json({
                 business,
 
                 reservations:
                     reservationsResult.rows,
 
+                professionals:
+                    professionalsResult.rows,
+
+                stats,
             });
-
         } catch (error) {
-
             next(error);
-
         }
-
     }
-
 );
 
 export default router;

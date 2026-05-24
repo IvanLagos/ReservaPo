@@ -1,122 +1,79 @@
-import express
-from "express";
+import express from "express";
 
-import { pool }
-from "../consultas.js";
+import { pool } from "../consultas.js";
 
 import {
-
     createProfessional,
-
     getProfessionals,
-
     updateProfessional,
-
     deleteProfessional,
+} from "../controllers/professionalController.js";
 
-}
-from "../controllers/professionalController.js";
+import { verifyToken } from "../middlewares/authMiddleware.js";
 
-import { verifyToken }
-from "../middlewares/authMiddleware.js";
+import { validateSchema } from "../middlewares/validateSchema.js";
 
-import { validateSchema }
-from "../middlewares/validateSchema.js";
+import { professionalSchema } from "../schemas/professionalSchema.js";
 
-import { professionalSchema }
-from "../schemas/professionalSchema.js";
+const router = express.Router();
 
-const router =
-    express.Router();
-
-// CREATE
+// CREATE PROFESSIONAL
 router.post(
-
     "/professionals",
-
     verifyToken,
-
-    validateSchema(
-        professionalSchema
-    ),
-
+    validateSchema(professionalSchema),
     createProfessional
 );
 
-// GET ALL
+// GET ALL PROFESSIONALS
 router.get(
-
     "/professionals",
-
     getProfessionals
 );
 
-// GET BY BUSINESS
+// GET PROFESSIONALS BY BUSINESS
 router.get(
-
     "/professionals/:businessId",
-
     async (req, res, next) => {
-
         try {
+            const { businessId } = req.params;
 
-            const { businessId } =
-                req.params;
-
-            const result =
-                await pool.query(
-
-                    `
-                    SELECT
-                        id,
-                        business_id,
-                        name,
-                        specialty,
-                        phone,
-                        image
-                    FROM professionals
-                    WHERE business_id = $1
-                    ORDER BY id ASC
-                    `,
-
-                    [businessId]
-
-                );
+            const result = await pool.query(
+                `
+                SELECT
+                    id,
+                    business_id,
+                    name,
+                    specialty,
+                    phone,
+                    image_url
+                FROM professionals
+                WHERE business_id = $1
+                ORDER BY id ASC
+                `,
+                [businessId]
+            );
 
             res.json({
-
-                professionals:
-                    result.rows,
-
+                professionals: result.rows,
             });
-
         } catch (error) {
-
             next(error);
-
         }
-
     }
-
 );
 
-// UPDATE
+// UPDATE PROFESSIONAL
 router.put(
-
     "/professionals/:id",
-
     verifyToken,
-
     updateProfessional
 );
 
-// DELETE
+// DELETE PROFESSIONAL
 router.delete(
-
     "/professionals/:id",
-
     verifyToken,
-
     deleteProfessional
 );
 

@@ -1,39 +1,58 @@
-function DashboardStats() {
-
-    const stats = [
+function DashboardStats({ stats }) {
+    const cards = [
         {
             title: "Reservas hoy",
-            value: "12",
-            change: "+18%",
+            value: stats?.todayReservations || 0,
+            subtitle: "Citas registradas hoy",
             icon: "📅",
             color: "violet",
         },
         {
-            title: "Ingresos semanales",
-            value: "$1.240.000",
-            change: "+12%",
+            title: "Confirmadas",
+            value: stats?.confirmed || 0,
+            subtitle: "Reservas confirmadas",
+            icon: "✅",
             color: "green",
         },
         {
-            title: "Clientes nuevos",
-            value: "48",
-            change: "+24%",
-            icon: "👥",
+            title: "Pendientes",
+            value: stats?.pending || 0,
+            subtitle: "Esperando confirmación",
+            icon: "⏳",
+            color: "yellow",
+        },
+        {
+            title: "Canceladas",
+            value: stats?.cancelled || 0,
+            subtitle: "Reservas canceladas",
+            icon: "❌",
+            color: "red",
+        },
+        {
+            title: "Profesionales",
+            value: stats?.professionals || 0,
+            subtitle: "Equipo del negocio",
+            icon: "💈",
             color: "blue",
         },
         {
-            title: "Ocupación",
-            value: "87%",
-            change: "+9%",
-            icon: "📈",
+            title: "Reservas totales",
+            value: stats?.totalReservations || 0,
+            subtitle: "Reservas registradas",
+            icon: "📊",
             color: "orange",
+        },
+        {
+            title: "Ocupación",
+            value: `${stats?.occupation || 0}%`,
+            subtitle: "Reservas activas",
+            icon: "📈",
+            color: "pink",
         },
     ];
 
     const getColorStyles = (color) => {
-
         switch (color) {
-
             case "violet":
                 return `
                     from-violet-500/20
@@ -48,6 +67,20 @@ function DashboardStats() {
                     border-green-500/20
                 `;
 
+            case "yellow":
+                return `
+                    from-yellow-500/20
+                    to-orange-500/20
+                    border-yellow-500/20
+                `;
+
+            case "red":
+                return `
+                    from-red-500/20
+                    to-rose-500/20
+                    border-red-500/20
+                `;
+
             case "blue":
                 return `
                     from-sky-500/20
@@ -58,8 +91,15 @@ function DashboardStats() {
             case "orange":
                 return `
                     from-orange-500/20
-                    to-yellow-500/20
+                    to-amber-500/20
                     border-orange-500/20
+                `;
+
+            case "pink":
+                return `
+                    from-pink-500/20
+                    to-fuchsia-500/20
+                    border-pink-500/20
                 `;
 
             default:
@@ -69,14 +109,11 @@ function DashboardStats() {
                     border-white/10
                 `;
         }
-
     };
 
     return (
         <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-6">
-
-            {stats.map((stat, index) => (
-
+            {cards.map((card, index) => (
                 <div
                     key={index}
                     className={
@@ -92,11 +129,9 @@ function DashboardStats() {
                             duration-300
                             hover:scale-[1.02]
                             hover:border-white/20
-                        ` +
-                        getColorStyles(stat.color)
+                        ` + getColorStyles(card.color)
                     }
                 >
-
                     {/* GLOW */}
                     <div
                         className="
@@ -114,27 +149,17 @@ function DashboardStats() {
 
                     {/* CONTENT */}
                     <div className="relative z-10">
-
-                        {/* TOP */}
                         <div className="flex items-start justify-between gap-4">
-
                             <div>
-
                                 <p className="text-zinc-400 text-sm">
-
-                                    {stat.title}
-
+                                    {card.title}
                                 </p>
 
                                 <h2 className="mt-4 text-4xl font-semibold tracking-tight">
-
-                                    {stat.value}
-
+                                    {card.value}
                                 </h2>
-
                             </div>
 
-                            {/* ICON */}
                             <div
                                 className="
                                     w-16
@@ -150,48 +175,18 @@ function DashboardStats() {
                                     shadow-lg
                                 "
                             >
-
-                                {stat.icon}
-
+                                {card.icon}
                             </div>
-
                         </div>
 
-                        {/* CHANGE */}
-                        <div className="mt-8 flex items-center gap-3">
-
-                            <div
-                                className="
-                                    bg-green-500/10
-                                    border
-                                    border-green-500/20
-                                    text-green-400
-                                    px-3
-                                    py-1
-                                    rounded-xl
-                                    text-sm
-                                    font-medium
-                                "
-                            >
-
-                                {stat.change}
-
-                            </div>
-
-                            <span className="text-zinc-500 text-sm">
-
-                                comparado con la semana pasada
-
+                        <div className="mt-8">
+                            <span className="text-zinc-400 text-sm">
+                                {card.subtitle}
                             </span>
-
                         </div>
-
                     </div>
-
                 </div>
-
             ))}
-
         </div>
     );
 }
