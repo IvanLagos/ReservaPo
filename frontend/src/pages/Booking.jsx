@@ -1,917 +1,896 @@
 import { useEffect, useMemo, useState } from "react";
 
 import {
-  Link,
-  useNavigate,
-  useParams,
+    Link,
+    useNavigate,
+    useParams,
 } from "react-router-dom";
 
 import Navbar from "../components/Navbar";
 
 const API_URL =
-  "https://reservapo.onrender.com";
+    "https://reservapo.onrender.com";
 
 function Booking() {
 
-  const navigate =
-    useNavigate();
+    const navigate =
+        useNavigate();
 
-  const {
+    const {
 
-    businessId,
+        businessId,
 
-    serviceIndex,
+        serviceIndex,
 
-    reservationId,
+        reservationId,
 
-  } = useParams();
+    } = useParams();
 
-  const isRebooking =
-    Boolean(reservationId);
+    const isRebooking =
+        Boolean(reservationId);
 
-  const [business, setBusiness] =
-    useState(null);
+    const [business, setBusiness] =
+        useState(null);
 
-  const [service, setService] =
-    useState(null);
+    const [service, setService] =
+        useState(null);
 
-  const [loading, setLoading] =
-    useState(true);
+    const [loading, setLoading] =
+        useState(true);
 
-  const [saving, setSaving] =
-    useState(false);
+    const [saving, setSaving] =
+        useState(false);
 
-  const [professionals, setProfessionals] =
-    useState([]);
+    const [professionals, setProfessionals] =
+        useState([]);
 
-  const [occupiedHours, setOccupiedHours] =
-    useState([]);
+    const [occupiedHours, setOccupiedHours] =
+        useState([]);
 
-  const [
+    const [
 
-    selectedProfessional,
+        selectedProfessional,
 
-    setSelectedProfessional,
+        setSelectedProfessional,
 
-  ] = useState(null);
+    ] = useState(null);
 
-  const [
+    const [
 
-    selectedDate,
+        selectedDate,
 
-    setSelectedDate,
+        setSelectedDate,
 
-  ] = useState("2026-05-24");
+    ] = useState("2026-05-24");
 
-  const [
+    const [
 
-    selectedHour,
+        selectedHour,
 
-    setSelectedHour,
+        setSelectedHour,
 
-  ] = useState("");
+    ] = useState("");
 
-  const [
+    const [
 
-    originalReservation,
+        errorMessage,
 
-    setOriginalReservation,
+        setErrorMessage,
 
-  ] = useState(null);
+    ] = useState("");
 
-  const [
+    const [
 
-    errorMessage,
+        successMessage,
 
-    setErrorMessage,
+        setSuccessMessage,
 
-  ] = useState("");
+    ] = useState("");
 
-  const [
+    const dates = [
 
-    successMessage,
+        "2026-05-24",
 
-    setSuccessMessage,
+        "2026-05-25",
 
-  ] = useState("");
+        "2026-05-26",
 
-  const dates = [
+        "2026-05-27",
 
-    "2026-05-24",
+    ];
 
-    "2026-05-25",
+    const hours = [
 
-    "2026-05-26",
+        "08:00",
 
-    "2026-05-27",
+        "08:45",
 
-  ];
+        "09:30",
 
-  const hours = [
+        "10:15",
 
-    "08:00",
+        "11:00",
 
-    "08:45",
+        "11:45",
 
-    "09:30",
+        "12:30",
 
-    "10:15",
+        "13:15",
 
-    "11:00",
+        "14:00",
 
-    "11:45",
+        "14:45",
 
-    "12:30",
+        "15:30",
 
-    "13:15",
+        "16:15",
 
-    "14:00",
+        "17:00",
 
-    "14:45",
+        "17:45",
 
-    "15:30",
+        "18:30",
 
-    "16:15",
+        "19:15",
 
-    "17:00",
+    ];
 
-    "17:45",
+    const normalizeHour =
+        (hour) => {
 
-    "18:30",
+            return hour
+                ?.toString()
+                .slice(0, 5);
 
-    "19:15",
+        };
 
-  ];
+    const normalizedOccupiedHours =
+        useMemo(() => {
 
-  const normalizeHour =
-    (hour) => {
+            return occupiedHours.map(
+                (hour) =>
+                    normalizeHour(hour)
+            );
 
-      return hour
-        ?.toString()
-        .slice(0, 5);
+        }, [occupiedHours]);
 
-    };
+    const availableHours =
+        useMemo(() => {
 
-  const normalizedOccupiedHours =
-    useMemo(() => {
+            const filtered =
+                hours.filter(
 
-      return occupiedHours.map(
-        (hour) =>
-          normalizeHour(hour)
-      );
+                    (hour) =>
 
-    }, [occupiedHours]);
+                        !normalizedOccupiedHours.includes(
+                            hour
+                        )
 
-  const availableHours =
-    useMemo(() => {
+                );
 
-      const filtered =
-        hours.filter(
+            // ALLOW CURRENT HOUR WHEN REBOOKING
+            if (
+                isRebooking &&
+                selectedHour &&
+                !filtered.includes(
+                    selectedHour
+                )
+            ) {
 
-          (hour) =>
+                filtered.push(
+                    selectedHour
+                );
 
-            !normalizedOccupiedHours.includes(
-              hour
-            )
+            }
 
-        );
+            return filtered.sort();
 
-      // ALLOW CURRENT HOUR WHEN REBOOKING
-      if (
-        isRebooking &&
-        selectedHour &&
-        !filtered.includes(
-          selectedHour
-        )
-      ) {
+        }, [
 
-        filtered.push(
-          selectedHour
-        );
+            hours,
 
-      }
+            normalizedOccupiedHours,
 
-      return filtered.sort();
+            selectedHour,
+
+            isRebooking,
+
+        ]);
+
+    // LOAD BUSINESS
+    useEffect(() => {
+
+        async function loadBusiness() {
+
+            try {
+
+                setLoading(true);
+
+                const response =
+                    await fetch(
+                        `${API_URL}/businesses`
+                    );
+
+                const data =
+                    await response.json();
+
+                if (!response.ok) {
+
+                    throw new Error(
+
+                        data.error ||
+
+                        "No se pudo cargar el negocio"
+
+                    );
+
+                }
+
+                const selectedBusiness =
+                    (
+                        data.businesses || []
+                    ).find(
+
+                        (item) =>
+
+                            Number(item.id) ===
+                            Number(businessId)
+
+                    );
+
+                if (
+                    !selectedBusiness
+                ) {
+
+                    throw new Error(
+                        "Negocio no encontrado"
+                    );
+
+                }
+
+                const selectedService =
+                    selectedBusiness
+                        .services?.[
+                    Number(
+                        serviceIndex
+                    )
+                    ] || {
+
+                        name:
+                            "Servicio general",
+
+                        price:
+                            "$15.000",
+
+                    };
+
+                setBusiness(
+                    selectedBusiness
+                );
+
+                setService(
+                    selectedService
+                );
+
+            } catch (error) {
+
+                setErrorMessage(
+                    error.message
+                );
+
+            } finally {
+
+                setLoading(false);
+
+            }
+
+        }
+
+        loadBusiness();
 
     }, [
 
-      hours,
+        businessId,
 
-      normalizedOccupiedHours,
-
-      selectedHour,
-
-      isRebooking,
+        serviceIndex,
 
     ]);
 
-  // LOAD BUSINESS
-  useEffect(() => {
+    // LOAD PROFESSIONALS
+    useEffect(() => {
 
-    async function loadBusiness() {
+        async function loadProfessionals() {
 
-      try {
+            try {
 
-        setLoading(true);
+                const response =
+                    await fetch(
 
-        const response =
-          await fetch(
-            `${API_URL}/businesses`
-          );
+                        `${API_URL}/professionals/${businessId}`
 
-        const data =
-          await response.json();
+                    );
 
-        if (!response.ok) {
+                const data =
+                    await response.json();
 
-          throw new Error(
+                if (!response.ok) {
 
-            data.error ||
+                    throw new Error(
 
-            "No se pudo cargar el negocio"
+                        data.error ||
 
-          );
+                        "No se pudieron cargar profesionales"
 
-        }
+                    );
 
-        const selectedBusiness =
-          (
-            data.businesses || []
-          ).find(
+                }
 
-            (item) =>
+                const professionalsList =
+                    data.professionals ||
+                    [];
 
-              Number(item.id) ===
-              Number(businessId)
+                setProfessionals(
+                    professionalsList
+                );
 
-          );
+                if (
+                    professionalsList.length > 0 &&
+                    !selectedProfessional
+                ) {
 
-        if (
-          !selectedBusiness
-        ) {
+                    setSelectedProfessional(
+                        professionalsList[0].id
+                    );
 
-          throw new Error(
-            "Negocio no encontrado"
-          );
+                }
 
-        }
+            } catch (error) {
 
-        const selectedService =
-          selectedBusiness
-            .services?.[
-              Number(
-                serviceIndex
-              )
-            ] || {
-
-            name:
-              "Servicio general",
-
-            price:
-              "$15.000",
-
-          };
-
-        setBusiness(
-          selectedBusiness
-        );
-
-        setService(
-          selectedService
-        );
-
-      } catch (error) {
-
-        setErrorMessage(
-          error.message
-        );
-
-      } finally {
-
-        setLoading(false);
-
-      }
-
-    }
-
-    loadBusiness();
-
-  }, [
-
-    businessId,
-
-    serviceIndex,
-
-  ]);
-
-  // LOAD PROFESSIONALS
-  useEffect(() => {
-
-    async function loadProfessionals() {
-
-      try {
-
-        const response =
-          await fetch(
-
-            `${API_URL}/professionals/${businessId}`
-
-          );
-
-        const data =
-          await response.json();
-
-        if (!response.ok) {
-
-          throw new Error(
-
-            data.error ||
-
-            "No se pudieron cargar profesionales"
-
-          );
-
-        }
-
-        const professionalsList =
-          data.professionals ||
-          [];
-
-        setProfessionals(
-          professionalsList
-        );
-
-        if (
-          professionalsList.length > 0 &&
-          !selectedProfessional
-        ) {
-
-          setSelectedProfessional(
-            professionalsList[0].id
-          );
-
-        }
-
-      } catch (error) {
-
-        console.log(error);
-
-      }
-
-    }
-
-    loadProfessionals();
-
-  }, [businessId]);
-
-  // LOAD ORIGINAL RESERVATION
-  useEffect(() => {
-
-    async function loadReservation() {
-
-      if (
-        !isRebooking
-      ) {
-
-        return;
-
-      }
-
-      try {
-
-        const token =
-          localStorage.getItem(
-            "token"
-          );
-
-        const response =
-          await fetch(
-
-            `${API_URL}/reservations`,
-
-            {
-
-              headers: {
-
-                Authorization:
-                  `Bearer ${token}`,
-
-              },
+                console.log(error);
 
             }
 
-          );
-
-        const data =
-          await response.json();
-
-        const reservation =
-          data.reservations?.find(
-
-            (item) =>
-
-              Number(item.id) ===
-              Number(
-                reservationId
-              )
-
-          );
-
-        if (
-          !reservation
-        ) {
-
-          throw new Error(
-            "Reserva no encontrada"
-          );
-
         }
 
-        setOriginalReservation(
-          reservation
-        );
+        loadProfessionals();
 
-        setSelectedProfessional(
-          reservation.professional_id
-        );
+    }, [businessId, selectedProfessional]);
 
-        setSelectedDate(
-          reservation.reservation_date
-        );
+    // LOAD ORIGINAL RESERVATION
+    useEffect(() => {
 
-        setSelectedHour(
-          normalizeHour(
-            reservation.reservation_time
-          )
-        );
+        async function loadReservation() {
 
-      } catch (error) {
+            if (
+                !isRebooking
+            ) {
 
-        console.log(error);
-
-      }
-
-    }
-
-    loadReservation();
-
-  }, [reservationId]);
-
-  // LOAD OCCUPIED HOURS
-  useEffect(() => {
-
-    async function loadOccupiedHours() {
-
-      if (
-        !selectedProfessional
-      ) {
-
-        return;
-
-      }
-
-      try {
-
-        const params =
-          new URLSearchParams({
-
-            business_id:
-              businessId,
-
-            professional_id:
-              selectedProfessional,
-
-            reservation_date:
-              selectedDate,
-
-          });
-
-        const response =
-          await fetch(
-
-            `${API_URL}/reservations/occupied?${params.toString()}`
-
-          );
-
-        const data =
-          await response.json();
-
-        if (!response.ok) {
-
-          throw new Error(
-            data.error
-          );
-
-        }
-
-        setOccupiedHours(
-          data.occupiedHours ||
-          []
-        );
-
-      } catch (error) {
-
-        console.log(error);
-
-        setOccupiedHours([]);
-
-      }
-
-    }
-
-    loadOccupiedHours();
-
-  }, [
-
-    businessId,
-
-    selectedProfessional,
-
-    selectedDate,
-
-  ]);
-
-  const showError =
-    (message) => {
-
-      setErrorMessage(
-        message
-      );
-
-      setTimeout(() => {
-
-        setErrorMessage("");
-
-      }, 4000);
-
-    };
-
-  // CREATE / UPDATE
-  const handleReservation =
-    async () => {
-
-      try {
-
-        setSaving(true);
-
-        setErrorMessage("");
-
-        setSuccessMessage("");
-
-        const token =
-          localStorage.getItem(
-            "token"
-          );
-
-        if (!token) {
-
-          navigate("/login");
-
-          return;
-
-        }
-
-        const endpoint =
-          isRebooking
-
-            ? `${API_URL}/reservations/${reservationId}`
-
-            : `${API_URL}/reservations`;
-
-        const method =
-          isRebooking
-            ? "PUT"
-            : "POST";
-
-        const response =
-          await fetch(
-            endpoint,
-            {
-
-              method,
-
-              headers: {
-
-                "Content-Type":
-                  "application/json",
-
-                Authorization:
-                  `Bearer ${token}`,
-
-              },
-
-              body: JSON.stringify({
-
-                business_id:
-                  Number(
-                    businessId
-                  ),
-
-                professional_id:
-                  Number(
-                    selectedProfessional
-                  ),
-
-                service:
-                  service.name,
-
-                reservation_date:
-                  selectedDate,
-
-                reservation_time:
-                  selectedHour,
-
-                status:
-                  "Pendiente",
-
-              }),
+                return;
 
             }
-          );
 
-        const data =
-          await response.json();
+            try {
 
-        if (!response.ok) {
+                const token =
+                    localStorage.getItem(
+                        "token"
+                    );
 
-          throw new Error(
+                const response =
+                    await fetch(
 
-            data.error ||
+                        `${API_URL}/reservations`,
 
-            "No se pudo guardar la reserva"
+                        {
 
-          );
+                            headers: {
+
+                                Authorization:
+                                    `Bearer ${token}`,
+
+                            },
+
+                        }
+
+                    );
+
+                const data =
+                    await response.json();
+
+                const reservation =
+                    data.reservations?.find(
+
+                        (item) =>
+
+                            Number(item.id) ===
+                            Number(
+                                reservationId
+                            )
+
+                    );
+
+                if (
+                    !reservation
+                ) {
+
+                    throw new Error(
+                        "Reserva no encontrada"
+                    );
+
+                }
+
+                setSelectedProfessional(
+                    reservation.professional_id
+                );
+
+                setSelectedDate(
+                    reservation.reservation_date
+                );
+
+                setSelectedHour(
+                    normalizeHour(
+                        reservation.reservation_time
+                    )
+                );
+
+            } catch (error) {
+
+                console.log(error);
+
+            }
 
         }
 
-        setSuccessMessage(
+        loadReservation();
 
-          isRebooking
+    }, [isRebooking, reservationId]);
 
-            ? "Reserva reagendada correctamente ✨"
+    // LOAD OCCUPIED HOURS
+    useEffect(() => {
 
-            : "Reserva realizada correctamente ✨"
+        async function loadOccupiedHours() {
 
-        );
-
-        setTimeout(() => {
-
-          navigate(
-            "/my-reservations"
-          );
-
-        }, 1500);
-
-      } catch (error) {
-
-        showError(
-          error.message
-        );
-
-      } finally {
-
-        setSaving(false);
-
-      }
-
-    };
-
-  if (loading) {
-
-    return (
-
-      <div className="bg-black min-h-screen flex items-center justify-center text-white">
-
-        Cargando reserva...
-
-      </div>
-
-    );
-
-  }
-
-  if (
-    !business ||
-    !service
-  ) {
-
-    return (
-
-      <div className="bg-black min-h-screen flex items-center justify-center text-white">
-
-        Reserva no encontrada.
-
-      </div>
-
-    );
-
-  }
-
-  return (
-
-    <div className="bg-black min-h-screen text-white overflow-x-hidden">
-
-      {errorMessage && (
-
-        <div className="fixed bottom-6 right-6 z-[9999] bg-red-500 text-white px-6 py-4 rounded-2xl shadow-2xl max-w-[350px]">
-
-          ❌ {errorMessage}
-
-        </div>
-
-      )}
-
-      {successMessage && (
-
-        <div className="fixed bottom-6 right-6 z-[9999] bg-green-500 text-white px-6 py-4 rounded-2xl shadow-2xl max-w-[350px]">
-
-          ✅ {successMessage}
-
-        </div>
-
-      )}
-
-      <Navbar />
-
-      <section className="pt-36 px-6 pb-20">
-
-        <div className="max-w-4xl mx-auto">
-
-          <div className="bg-white/5 border border-white/10 rounded-[2rem] backdrop-blur-2xl p-8 shadow-2xl relative">
-
-            <Link
-              to={`/business/${business.id}`}
-              className="absolute top-6 right-6 text-zinc-500 hover:text-white text-2xl transition"
-            >
-
-              ✕
-
-            </Link>
-
-            <h1 className="text-3xl font-semibold">
-
-              {isRebooking
-                ? "Reagendar reserva"
-                : "Nueva reserva"}
-
-            </h1>
-
-            {/* PROFESSIONALS */}
-
-            <div className="mt-10">
-
-              <h3 className="text-zinc-400 uppercase text-sm tracking-widest">
-
-                Profesionales
-
-              </h3>
-
-              <div className="mt-4 flex flex-wrap gap-3">
-
-                {professionals.map(
-                  (professional) => (
-
-                    <button
-                      key={
-                        professional.id
-                      }
-                      onClick={() =>
-                        setSelectedProfessional(
-                          professional.id
-                        )
-                      }
-                      className={`px-5 py-3 rounded-2xl border transition ${
-                        selectedProfessional ===
-                        professional.id
-                          ? "bg-violet-500 border-violet-400 text-white"
-                          : "bg-white/5 border-white/10 hover:bg-white/10"
-                      }`}
-                    >
-
-                      {professional.name}
-
-                    </button>
-
-                  )
-                )}
-
-              </div>
-
-            </div>
-
-            {/* DATES */}
-
-            <div className="mt-10">
-
-              <h3 className="text-zinc-400 uppercase text-sm tracking-widest">
-
-                Días disponibles
-
-              </h3>
-
-              <div className="mt-4 flex flex-wrap gap-3">
-
-                {dates.map((date) => (
-
-                  <button
-                    key={date}
-                    onClick={() =>
-                      setSelectedDate(
-                        date
-                      )
-                    }
-                    className={`px-5 py-3 rounded-2xl border transition ${
-                      selectedDate ===
-                      date
-                        ? "bg-violet-500 border-violet-400 text-white"
-                        : "bg-white/5 border-white/10 hover:bg-white/10"
-                    }`}
-                  >
-
-                    {date}
-
-                  </button>
-
-                ))}
-
-              </div>
-
-            </div>
-
-            {/* HOURS */}
-
-            <div className="mt-10">
-
-              <h3 className="text-zinc-400 uppercase text-sm tracking-widest">
-
-                Horas disponibles
-
-              </h3>
-
-              <div className="mt-4 flex flex-wrap gap-3">
-
-                {availableHours.map(
-                  (hour) => (
-
-                    <button
-                      key={hour}
-                      onClick={() =>
-                        setSelectedHour(
-                          hour
-                        )
-                      }
-                      className={`px-5 py-3 rounded-2xl border transition ${
-                        selectedHour ===
-                        hour
-                          ? "bg-violet-500 border-violet-400 text-white"
-                          : "bg-white/5 border-white/10 hover:bg-white/10"
-                      }`}
-                    >
-
-                      {hour}
-
-                    </button>
-
-                  )
-                )}
-
-              </div>
-
-            </div>
-
-            <button
-              onClick={
-                handleReservation
-              }
-              disabled={
-                saving ||
-                !selectedHour ||
+            if (
                 !selectedProfessional
-              }
-              className="mt-12 w-full bg-white text-black hover:bg-zinc-200 py-5 rounded-2xl font-semibold transition text-lg disabled:opacity-50"
-            >
+            ) {
 
-              {saving
+                return;
 
-                ? "Guardando..."
+            }
 
-                : isRebooking
+            try {
 
-                ? "Guardar cambios"
+                const params =
+                    new URLSearchParams({
 
-                : "Reservar"}
+                        business_id:
+                            businessId,
 
-            </button>
+                        professional_id:
+                            selectedProfessional,
 
-          </div>
+                        reservation_date:
+                            selectedDate,
+
+                    });
+
+                const response =
+                    await fetch(
+
+                        `${API_URL}/reservations/occupied?${params.toString()}`
+
+                    );
+
+                const data =
+                    await response.json();
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        data.error
+                    );
+
+                }
+
+                setOccupiedHours(
+                    data.occupiedHours ||
+                    []
+                );
+
+            } catch (error) {
+
+                console.log(error);
+
+                setOccupiedHours([]);
+
+            }
+
+        }
+
+        loadOccupiedHours();
+
+    }, [
+
+        businessId,
+
+        selectedProfessional,
+
+        selectedDate,
+
+    ]);
+
+    const showError =
+        (message) => {
+
+            setErrorMessage(
+                message
+            );
+
+            setTimeout(() => {
+
+                setErrorMessage("");
+
+            }, 4000);
+
+        };
+
+    // CREATE / UPDATE
+    const handleReservation =
+        async () => {
+
+            try {
+
+                setSaving(true);
+
+                setErrorMessage("");
+
+                setSuccessMessage("");
+
+                const token =
+                    localStorage.getItem(
+                        "token"
+                    );
+
+                if (!token) {
+
+                    navigate("/login");
+
+                    return;
+
+                }
+
+                const endpoint =
+                    isRebooking
+
+                        ? `${API_URL}/reservations/${reservationId}`
+
+                        : `${API_URL}/reservations`;
+
+                const method =
+                    isRebooking
+                        ? "PUT"
+                        : "POST";
+
+                const response =
+                    await fetch(
+                        endpoint,
+                        {
+
+                            method,
+
+                            headers: {
+
+                                "Content-Type":
+                                    "application/json",
+
+                                Authorization:
+                                    `Bearer ${token}`,
+
+                            },
+
+                            body: JSON.stringify({
+
+                                business_id:
+                                    Number(
+                                        businessId
+                                    ),
+
+                                professional_id:
+                                    Number(
+                                        selectedProfessional
+                                    ),
+
+                                service:
+                                    service.name,
+
+                                reservation_date:
+                                    selectedDate,
+
+                                reservation_time:
+                                    selectedHour,
+
+                                status:
+                                    "Pendiente",
+
+                            }),
+
+                        }
+                    );
+
+                const data =
+                    await response.json();
+
+                if (!response.ok) {
+
+                    throw new Error(
+
+                        data.error ||
+
+                        "No se pudo guardar la reserva"
+
+                    );
+
+                }
+
+                setSuccessMessage(
+
+                    isRebooking
+
+                        ? "Reserva reagendada correctamente ✨"
+
+                        : "Reserva realizada correctamente ✨"
+
+                );
+
+                setTimeout(() => {
+
+                    navigate(
+                        "/my-reservations"
+                    );
+
+                }, 1500);
+
+            } catch (error) {
+
+                showError(
+                    error.message
+                );
+
+            } finally {
+
+                setSaving(false);
+
+            }
+
+        };
+
+    if (loading) {
+
+        return (
+
+            <div className="bg-black min-h-screen flex items-center justify-center text-white">
+
+                Cargando reserva...
+
+            </div>
+
+        );
+
+    }
+
+    if (
+        !business ||
+        !service
+    ) {
+
+        return (
+
+            <div className="bg-black min-h-screen flex items-center justify-center text-white">
+
+                Reserva no encontrada.
+
+            </div>
+
+        );
+
+    }
+
+    return (
+
+        <div className="bg-black min-h-screen text-white overflow-x-hidden">
+
+            {errorMessage && (
+
+                <div className="fixed bottom-6 right-6 z-[9999] bg-red-500 text-white px-6 py-4 rounded-2xl shadow-2xl max-w-[350px]">
+
+                    ❌ {errorMessage}
+
+                </div>
+
+            )}
+
+            {successMessage && (
+
+                <div className="fixed bottom-6 right-6 z-[9999] bg-green-500 text-white px-6 py-4 rounded-2xl shadow-2xl max-w-[350px]">
+
+                    ✅ {successMessage}
+
+                </div>
+
+            )}
+
+            <Navbar />
+
+            <section className="pt-36 px-6 pb-20">
+
+                <div className="max-w-4xl mx-auto">
+
+                    <div className="bg-white/5 border border-white/10 rounded-[2rem] backdrop-blur-2xl p-8 shadow-2xl relative">
+
+                        <Link
+                            to={`/business/${business.id}`}
+                            className="absolute top-6 right-6 text-zinc-500 hover:text-white text-2xl transition"
+                        >
+
+                            ✕
+
+                        </Link>
+
+                        <h1 className="text-3xl font-semibold">
+
+                            {isRebooking
+                                ? "Reagendar reserva"
+                                : "Nueva reserva"}
+
+                        </h1>
+
+                        <div className="mt-10">
+
+                            <h3 className="text-zinc-400 uppercase text-sm tracking-widest">
+
+                                Profesionales
+
+                            </h3>
+
+                            <div className="mt-4 flex flex-wrap gap-3">
+
+                                {professionals.map(
+                                    (professional) => (
+
+                                        <button
+                                            key={
+                                                professional.id
+                                            }
+                                            onClick={() =>
+                                                setSelectedProfessional(
+                                                    professional.id
+                                                )
+                                            }
+                                            className={`px-5 py-3 rounded-2xl border transition ${selectedProfessional ===
+                                                professional.id
+                                                ? "bg-violet-500 border-violet-400 text-white"
+                                                : "bg-white/5 border-white/10 hover:bg-white/10"
+                                                }`}
+                                        >
+
+                                            {professional.name}
+
+                                        </button>
+
+                                    )
+                                )}
+
+                            </div>
+
+                        </div>
+
+                        <div className="mt-10">
+
+                            <h3 className="text-zinc-400 uppercase text-sm tracking-widest">
+
+                                Días disponibles
+
+                            </h3>
+
+                            <div className="mt-4 flex flex-wrap gap-3">
+
+                                {dates.map((date) => (
+
+                                    <button
+                                        key={date}
+                                        onClick={() =>
+                                            setSelectedDate(
+                                                date
+                                            )
+                                        }
+                                        className={`px-5 py-3 rounded-2xl border transition ${selectedDate ===
+                                            date
+                                            ? "bg-violet-500 border-violet-400 text-white"
+                                            : "bg-white/5 border-white/10 hover:bg-white/10"
+                                            }`}
+                                    >
+
+                                        {date}
+
+                                    </button>
+
+                                ))}
+
+                            </div>
+
+                        </div>
+
+                        <div className="mt-10">
+
+                            <h3 className="text-zinc-400 uppercase text-sm tracking-widest">
+
+                                Horas disponibles
+
+                            </h3>
+
+                            <div className="mt-4 flex flex-wrap gap-3">
+
+                                {availableHours.map(
+                                    (hour) => (
+
+                                        <button
+                                            key={hour}
+                                            onClick={() =>
+                                                setSelectedHour(
+                                                    hour
+                                                )
+                                            }
+                                            className={`px-5 py-3 rounded-2xl border transition ${selectedHour ===
+                                                hour
+                                                ? "bg-violet-500 border-violet-400 text-white"
+                                                : "bg-white/5 border-white/10 hover:bg-white/10"
+                                                }`}
+                                        >
+
+                                            {hour}
+
+                                        </button>
+
+                                    )
+                                )}
+
+                            </div>
+
+                        </div>
+
+                        <button
+                            onClick={
+                                handleReservation
+                            }
+                            disabled={
+                                saving ||
+                                !selectedHour ||
+                                !selectedProfessional
+                            }
+                            className="mt-12 w-full bg-white text-black hover:bg-zinc-200 py-5 rounded-2xl font-semibold transition text-lg disabled:opacity-50"
+                        >
+
+                            {saving
+
+                                ? "Guardando..."
+
+                                : isRebooking
+
+                                    ? "Guardar cambios"
+
+                                    : "Reservar"}
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </section>
 
         </div>
 
-      </section>
-
-    </div>
-
-  );
+    );
 
 }
 
