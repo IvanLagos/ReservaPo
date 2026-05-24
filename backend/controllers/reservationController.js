@@ -214,11 +214,9 @@ export const getReservations =
 
                     WHERE reservations.user_id = $1
 
-                    ORDER BY
+                    ORDER BY reservations.id DESC
 
-                        reservations.reservation_date DESC,
-
-                        reservations.reservation_time DESC
+                    LIMIT 10
                     `,
 
                     [req.user.id]
@@ -263,7 +261,6 @@ export const updateReservation =
 
             } = req.body;
 
-            // CHECK OWNER
             const reservation =
                 await pool.query(
 
@@ -319,7 +316,6 @@ export const updateReservation =
                 status ||
                 currentReservation.status;
 
-            // VALIDAR HORA OCUPADA AL REAGENDAR
             const existingReservation =
                 await pool.query(
 
@@ -433,7 +429,6 @@ export const deleteReservation =
             const { id } =
                 req.params;
 
-            // CHECK OWNER
             const reservation =
                 await pool.query(
 
@@ -482,7 +477,6 @@ export const deleteReservation =
 
             }
 
-            // CANCELAR SIN BORRAR
             const result =
                 await pool.query(
 
