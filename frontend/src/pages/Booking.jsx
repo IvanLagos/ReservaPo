@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
 
 const API_URL = "https://reservapo.onrender.com";
+const MINIMUM_HOURS_AHEAD = 2;
 
 const getTodayString = () => {
     const today = new Date();
@@ -46,7 +47,6 @@ const generateAvailableHours = () => {
         const minutes = String(current.getMinutes()).padStart(2, "0");
 
         hours.push(`${hour}:${minutes}`);
-
         current.setMinutes(current.getMinutes() + intervalMinutes);
     }
 
@@ -83,18 +83,23 @@ function Booking() {
         return date === getTodayString();
     };
 
-    const isPastHour = (hour) => {
+    const isTooSoonHour = (hour) => {
         if (!isToday(selectedDate)) {
             return false;
         }
 
         const now = new Date();
+
+        const minimumTime = new Date(
+            now.getTime() + MINIMUM_HOURS_AHEAD * 60 * 60 * 1000
+        );
+
         const [hourValue, minuteValue] = hour.split(":").map(Number);
 
         const compared = new Date();
         compared.setHours(hourValue, minuteValue, 0, 0);
 
-        return compared <= now;
+        return compared <= minimumTime;
     };
 
     const normalizedOccupiedHours = useMemo(() => {
@@ -104,9 +109,9 @@ function Booking() {
     const availableHours = useMemo(() => {
         const filtered = hours.filter((hour) => {
             const isOccupied = normalizedOccupiedHours.includes(hour);
-            const isPast = isPastHour(hour);
+            const isTooSoon = isTooSoonHour(hour);
 
-            return !isOccupied && !isPast;
+            return !isOccupied && !isTooSoon;
         });
 
         if (isRebooking && selectedHour && !filtered.includes(selectedHour)) {
@@ -319,6 +324,12 @@ function Booking() {
                 throw new Error("Debes seleccionar una hora");
             }
 
+            if (isToday(selectedDate) && isTooSoonHour(selectedHour)) {
+                throw new Error(
+                    `Debes reservar con al menos ${MINIMUM_HOURS_AHEAD} horas de anticipación`
+                );
+            }
+
             const endpoint = isRebooking
                 ? `${API_URL}/reservations/${reservationId}`
                 : `${API_URL}/reservations`;
@@ -525,6 +536,11 @@ function Booking() {
                             <h3 className="text-zinc-400 uppercase text-sm tracking-widest">
                                 Horas disponibles
                             </h3>
+
+                            <p className="mt-2 text-zinc-500 text-sm">
+                                Las reservas deben realizarse con al menos{" "}
+                                {MINIMUM_HOURS_AHEAD} horas de anticipación.
+                            </p>
 
                             <div className="mt-4 flex flex-wrap gap-3">
                                 {availableHours.length === 0 ? (
