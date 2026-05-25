@@ -1,32 +1,25 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 const API_URL = "https://reservapo.onrender.com";
 
-function ServicesManager({ services = [], refreshDashboard }) {
-    const [form, setForm] = useState({
-        name: "",
-        description: "",
-        price: "",
-        duration_minutes: 30,
-        category: "",
-        is_active: true,
-    });
+const createEmptyForm = () => ({
+    name: "",
+    description: "",
+    price: "",
+    duration_minutes: 30,
+    category: "",
+    is_active: true,
+});
 
+function ServicesManager({ services = [], refreshDashboard }) {
+    const [form, setForm] = useState(createEmptyForm());
     const [editingId, setEditingId] = useState(null);
     const [loading, setLoading] = useState(false);
 
-    useEffect(() => {
-        if (!editingId) {
-            setForm({
-                name: "",
-                description: "",
-                price: "",
-                duration_minutes: 30,
-                category: "",
-                is_active: true,
-            });
-        }
-    }, [editingId]);
+    const resetForm = () => {
+        setForm(createEmptyForm());
+        setEditingId(null);
+    };
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -50,23 +43,15 @@ function ServicesManager({ services = [], refreshDashboard }) {
         });
     };
 
-    const handleCancel = () => {
-        setEditingId(null);
-        setForm({
-            name: "",
-            description: "",
-            price: "",
-            duration_minutes: 30,
-            category: "",
-            is_active: true,
-        });
-    };
-
     const handleSubmit = async (e) => {
         e.preventDefault();
 
         try {
             setLoading(true);
+
+            if (!form.name.trim()) {
+                throw new Error("El nombre del servicio es obligatorio");
+            }
 
             const token = localStorage.getItem("token");
 
@@ -82,7 +67,14 @@ function ServicesManager({ services = [], refreshDashboard }) {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify(form),
+                body: JSON.stringify({
+                    name: form.name,
+                    description: form.description,
+                    price: Number(form.price) || 0,
+                    duration_minutes: Number(form.duration_minutes) || 30,
+                    category: form.category,
+                    is_active: form.is_active,
+                }),
             });
 
             const data = await response.json();
@@ -91,20 +83,20 @@ function ServicesManager({ services = [], refreshDashboard }) {
                 throw new Error(data.error || "No se pudo guardar el servicio");
             }
 
-            handleCancel();
+            resetForm();
 
             if (refreshDashboard) {
                 await refreshDashboard();
             }
         } catch (error) {
-            alert(error.message);
+            alert(error.message || "Ocurrió un error");
         } finally {
             setLoading(false);
         }
     };
 
     const handleDelete = async (id) => {
-        const confirmDelete = confirm(
+        const confirmDelete = window.confirm(
             "¿Seguro que quieres eliminar este servicio?"
         );
 
@@ -133,7 +125,7 @@ function ServicesManager({ services = [], refreshDashboard }) {
                 await refreshDashboard();
             }
         } catch (error) {
-            alert(error.message);
+            alert(error.message || "Ocurrió un error");
         }
     };
 
@@ -174,6 +166,7 @@ function ServicesManager({ services = [], refreshDashboard }) {
                         </label>
 
                         <input
+                            type="text"
                             name="name"
                             value={form.name}
                             onChange={handleChange}
@@ -188,6 +181,7 @@ function ServicesManager({ services = [], refreshDashboard }) {
                         </label>
 
                         <input
+                            type="text"
                             name="category"
                             value={form.category}
                             onChange={handleChange}
@@ -202,8 +196,8 @@ function ServicesManager({ services = [], refreshDashboard }) {
                         </label>
 
                         <input
-                            name="price"
                             type="number"
+                            name="price"
                             value={form.price}
                             onChange={handleChange}
                             placeholder="12000"
@@ -217,8 +211,8 @@ function ServicesManager({ services = [], refreshDashboard }) {
                         </label>
 
                         <input
-                            name="duration_minutes"
                             type="number"
+                            name="duration_minutes"
                             value={form.duration_minutes}
                             onChange={handleChange}
                             placeholder="30"
@@ -236,7 +230,7 @@ function ServicesManager({ services = [], refreshDashboard }) {
                             value={form.description}
                             onChange={handleChange}
                             placeholder="Describe brevemente el servicio..."
-                            rows="3"
+                            rows={3}
                             className="mt-2 w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 outline-none focus:border-violet-500 resize-none"
                         />
                     </div>
@@ -250,6 +244,7 @@ function ServicesManager({ services = [], refreshDashboard }) {
                                 onChange={handleChange}
                                 className="w-5 h-5"
                             />
+
                             Servicio activo
                         </label>
 
@@ -257,7 +252,7 @@ function ServicesManager({ services = [], refreshDashboard }) {
                             {editingId && (
                                 <button
                                     type="button"
-                                    onClick={handleCancel}
+                                    onClick={resetForm}
                                     className="bg-white/5 border border-white/10 hover:bg-white/10 px-6 py-3 rounded-2xl transition font-medium"
                                 >
                                     Cancelar
