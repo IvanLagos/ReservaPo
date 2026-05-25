@@ -4,17 +4,19 @@ import ServicesPreview from "../components/ServicesPreview";
 
 function Home() {
   return (
-    <div className="relative bg-black text-white overflow-x-hidden min-h-screen w-full max-w-full">
+    <div className="bg-black text-white overflow-x-hidden min-h-screen relative">
       {/* GLOW */}
-      <div className="pointer-events-none absolute top-[-180px] left-[-120px] w-[320px] h-[320px] sm:w-[500px] sm:h-[500px] bg-violet-600 opacity-20 blur-[100px] sm:blur-[120px] rounded-full"></div>
+      <div className="fixed top-[-200px] left-[-200px] w-[500px] h-[500px] bg-violet-600 opacity-20 blur-[120px] rounded-full pointer-events-none z-0"></div>
 
-      <div className="pointer-events-none absolute bottom-[-180px] right-[-120px] w-[320px] h-[320px] sm:w-[500px] sm:h-[500px] bg-fuchsia-600 opacity-20 blur-[100px] sm:blur-[120px] rounded-full"></div>
+      <div className="fixed bottom-[-200px] right-[-200px] w-[500px] h-[500px] bg-fuchsia-600 opacity-20 blur-[120px] rounded-full pointer-events-none z-0"></div>
 
-      <Navbar />
+      <div className="relative z-10">
+        <Navbar />
 
-      <Hero />
+        <Hero />
 
-      <ServicesPreview />
+        <ServicesPreview />
+      </div>
     </div>
   );
 }
