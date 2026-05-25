@@ -29,6 +29,11 @@ function BusinessSidebar({
             label: "Servicios",
             icon: "🧾",
         },
+        {
+            id: "security",
+            label: "Seguridad",
+            icon: "🔐",
+        },
     ];
 
     return (
@@ -148,7 +153,9 @@ function BusinessSidebar({
                                         `)
                             }
                         >
-                            <span className="text-xl">{item.icon}</span>
+                            <span className="text-xl">
+                                {item.icon}
+                            </span>
 
                             <span className="font-medium">
                                 {item.label}
@@ -174,7 +181,7 @@ function BusinessSidebar({
 
                     <p className="mt-3 text-sm text-zinc-300 leading-relaxed">
                         {business?.description ||
-                            "Administra reservas, horarios, profesionales y servicios desde este panel."}
+                            "Administra reservas, horarios, profesionales, servicios y seguridad desde este panel."}
                     </p>
                 </div>
 
@@ -198,7 +205,7 @@ function BusinessSidebar({
 
                         <p className="mt-2 text-zinc-400 text-sm leading-relaxed">
                             Gestiona tu negocio, reservas,
-                            profesionales y servicios desde un solo lugar.
+                            profesionales, servicios y seguridad desde un solo lugar.
                         </p>
                     </div>
                 </div>
