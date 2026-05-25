@@ -7,7 +7,6 @@ const MINIMUM_HOURS_AHEAD = 2;
 
 const getTodayString = () => {
     const today = new Date();
-
     const year = today.getFullYear();
     const month = String(today.getMonth() + 1).padStart(2, "0");
     const day = String(today.getDate()).padStart(2, "0");
@@ -30,17 +29,24 @@ const generateAvailableDates = () => {
     });
 };
 
-const generateAvailableHours = () => {
+const getDayOfWeek = (dateString) => {
+    const date = new Date(`${dateString}T00:00:00`);
+    return date.getDay();
+};
+
+const generateHoursBySchedule = (openTime, closeTime, intervalMinutes = 45) => {
+    if (!openTime || !closeTime) return [];
+
     const hours = [];
-    const startHour = 8;
-    const endHour = 20;
-    const intervalMinutes = 45;
+
+    const [openHour, openMinute] = openTime.split(":").map(Number);
+    const [closeHour, closeMinute] = closeTime.split(":").map(Number);
 
     const current = new Date();
-    current.setHours(startHour, 0, 0, 0);
+    current.setHours(openHour, openMinute, 0, 0);
 
     const end = new Date();
-    end.setHours(endHour, 0, 0, 0);
+    end.setHours(closeHour, closeMinute, 0, 0);
 
     while (current < end) {
         const hour = String(current.getHours()).padStart(2, "0");
@@ -62,6 +68,7 @@ function Booking() {
 
     const [business, setBusiness] = useState(null);
     const [service, setService] = useState(null);
+    const [businessSchedule, setBusinessSchedule] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [professionals, setProfessionals] = useState([]);
@@ -73,7 +80,26 @@ function Booking() {
     const [successMessage, setSuccessMessage] = useState("");
 
     const dates = useMemo(() => generateAvailableDates(), []);
-    const hours = useMemo(() => generateAvailableHours(), []);
+
+    const selectedDaySchedule = useMemo(() => {
+        const dayOfWeek = getDayOfWeek(selectedDate);
+
+        return businessSchedule.find(
+            (item) => Number(item.day_of_week) === Number(dayOfWeek)
+        );
+    }, [businessSchedule, selectedDate]);
+
+    const hours = useMemo(() => {
+        if (!selectedDaySchedule || !selectedDaySchedule.is_open) {
+            return [];
+        }
+
+        return generateHoursBySchedule(
+            selectedDaySchedule.open_time,
+            selectedDaySchedule.close_time,
+            45
+        );
+    }, [selectedDaySchedule]);
 
     const normalizeHour = (hour) => {
         return hour?.toString().slice(0, 5);
@@ -191,6 +217,31 @@ function Booking() {
     }, [businessId, serviceId, serviceIndex]);
 
     useEffect(() => {
+        async function loadBusinessSchedule() {
+            try {
+                const response = await fetch(
+                    `${API_URL}/businesses/${businessId}/schedule`
+                );
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(
+                        data.error || "No se pudo cargar el horario del negocio"
+                    );
+                }
+
+                setBusinessSchedule(data.schedule || []);
+            } catch (error) {
+                console.log(error);
+                setBusinessSchedule([]);
+            }
+        }
+
+        loadBusinessSchedule();
+    }, [businessId]);
+
+    useEffect(() => {
         async function loadProfessionals() {
             try {
                 const response = await fetch(
@@ -291,6 +342,10 @@ function Booking() {
         loadOccupiedHours();
     }, [businessId, selectedProfessional, selectedDate]);
 
+    const clearSelectedHour = () => {
+        setSelectedHour("");
+    };
+
     const showError = (message) => {
         setErrorMessage(message);
 
@@ -320,8 +375,18 @@ function Booking() {
                 throw new Error("Debes seleccionar una fecha");
             }
 
+            if (!selectedDaySchedule || !selectedDaySchedule.is_open) {
+                throw new Error("El negocio está cerrado ese día");
+            }
+
             if (!selectedHour) {
                 throw new Error("Debes seleccionar una hora");
+            }
+
+            if (!hours.includes(selectedHour)) {
+                throw new Error(
+                    "La hora seleccionada está fuera del horario de atención"
+                );
             }
 
             if (isToday(selectedDate) && isTooSoonHour(selectedHour)) {
@@ -488,11 +553,12 @@ function Booking() {
                                     professionals.map((professional) => (
                                         <button
                                             key={professional.id}
-                                            onClick={() =>
+                                            onClick={() => {
                                                 setSelectedProfessional(
                                                     professional.id
-                                                )
-                                            }
+                                                );
+                                                clearSelectedHour();
+                                            }}
                                             className={`px-5 py-3 rounded-2xl border transition ${
                                                 selectedProfessional ===
                                                 professional.id
@@ -513,22 +579,41 @@ function Booking() {
                             </h3>
 
                             <div className="mt-4 flex flex-wrap gap-3">
-                                {dates.map((date) => (
-                                    <button
-                                        key={date}
-                                        onClick={() => {
-                                            setSelectedDate(date);
-                                            setSelectedHour("");
-                                        }}
-                                        className={`px-5 py-3 rounded-2xl border transition ${
-                                            selectedDate === date
-                                                ? "bg-violet-500 border-violet-400 text-white"
-                                                : "bg-white/5 border-white/10 hover:bg-white/10"
-                                        }`}
-                                    >
-                                        {formatDate(date)}
-                                    </button>
-                                ))}
+                                {dates.map((date) => {
+                                    const dayNumber = getDayOfWeek(date);
+                                    const daySchedule = businessSchedule.find(
+                                        (item) =>
+                                            Number(item.day_of_week) ===
+                                            Number(dayNumber)
+                                    );
+
+                                    const isClosed =
+                                        daySchedule && !daySchedule.is_open;
+
+                                    return (
+                                        <button
+                                            key={date}
+                                            onClick={() => {
+                                                setSelectedDate(date);
+                                                clearSelectedHour();
+                                            }}
+                                            className={`px-5 py-3 rounded-2xl border transition ${
+                                                selectedDate === date
+                                                    ? "bg-violet-500 border-violet-400 text-white"
+                                                    : isClosed
+                                                    ? "bg-red-500/10 border-red-500/20 text-red-300"
+                                                    : "bg-white/5 border-white/10 hover:bg-white/10"
+                                            }`}
+                                        >
+                                            {formatDate(date)}
+                                            {isClosed && (
+                                                <span className="block text-xs mt-1">
+                                                    Cerrado
+                                                </span>
+                                            )}
+                                        </button>
+                                    );
+                                })}
                             </div>
                         </div>
 
@@ -537,10 +622,21 @@ function Booking() {
                                 Horas disponibles
                             </h3>
 
-                            <p className="mt-2 text-zinc-500 text-sm">
-                                Las reservas deben realizarse con al menos{" "}
-                                {MINIMUM_HOURS_AHEAD} horas de anticipación.
-                            </p>
+                            {selectedDaySchedule && selectedDaySchedule.is_open && (
+                                <p className="mt-2 text-zinc-500 text-sm">
+                                    Horario de atención:{" "}
+                                    {selectedDaySchedule.open_time} -{" "}
+                                    {selectedDaySchedule.close_time}. Las reservas
+                                    deben realizarse con al menos{" "}
+                                    {MINIMUM_HOURS_AHEAD} horas de anticipación.
+                                </p>
+                            )}
+
+                            {selectedDaySchedule && !selectedDaySchedule.is_open && (
+                                <p className="mt-2 text-red-300 text-sm">
+                                    El negocio está cerrado este día.
+                                </p>
+                            )}
 
                             <div className="mt-4 flex flex-wrap gap-3">
                                 {availableHours.length === 0 ? (
@@ -551,9 +647,7 @@ function Booking() {
                                     availableHours.map((hour) => (
                                         <button
                                             key={hour}
-                                            onClick={() =>
-                                                setSelectedHour(hour)
-                                            }
+                                            onClick={() => setSelectedHour(hour)}
                                             className={`px-5 py-3 rounded-2xl border transition ${
                                                 selectedHour === hour
                                                     ? "bg-violet-500 border-violet-400 text-white"
@@ -573,7 +667,9 @@ function Booking() {
                                 saving ||
                                 !selectedHour ||
                                 !selectedProfessional ||
-                                professionals.length === 0
+                                professionals.length === 0 ||
+                                !selectedDaySchedule ||
+                                !selectedDaySchedule.is_open
                             }
                             className="mt-12 w-full bg-white text-black hover:bg-zinc-200 py-5 rounded-2xl font-semibold transition text-lg disabled:opacity-50"
                         >
