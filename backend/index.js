@@ -30,6 +30,9 @@ from "./routes/businessRoutes.js";
 import serviceRoutes
 from "./routes/serviceRoutes.js";
 
+import scheduleRoutes
+from "./routes/scheduleRoutes.js";
+
 const app = express();
 
 app.use(cors());
@@ -46,6 +49,8 @@ app.use(professionalRoutes);
 app.use(businessRoutes);
 
 app.use("/", serviceRoutes);
+
+app.use("/", scheduleRoutes);
 
 // TEST DB
 app.get(
