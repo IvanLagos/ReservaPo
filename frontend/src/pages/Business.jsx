@@ -143,20 +143,22 @@ function Business() {
     }
 
     return (
-        <div className="bg-black min-h-screen text-white overflow-x-hidden relative isolate">
+        <div className="relative bg-black min-h-screen text-white overflow-x-hidden w-full max-w-full">
 
-            <div className="absolute top-[-200px] left-[-200px] w-[500px] h-[500px] bg-violet-600 opacity-20 blur-[120px] rounded-full pointer-events-none -z-10"></div>
+            {/* GLOW */}
+            <div className="pointer-events-none absolute top-[-120px] left-[-120px] w-[300px] h-[300px] sm:w-[500px] sm:h-[500px] bg-violet-600 opacity-20 blur-[100px] rounded-full"></div>
 
-            <div className="absolute bottom-[-200px] right-[-200px] w-[500px] h-[500px] bg-fuchsia-600 opacity-20 blur-[120px] rounded-full pointer-events-none -z-10"></div>
+            <div className="pointer-events-none absolute bottom-[-120px] right-[-120px] w-[300px] h-[300px] sm:w-[500px] sm:h-[500px] bg-fuchsia-600 opacity-20 blur-[100px] rounded-full"></div>
 
             <Navbar />
 
-            <section className="pt-36 px-6 pb-20">
+            <section className="pt-28 sm:pt-36 px-4 sm:px-6 pb-20 relative z-10">
 
                 <div className="max-w-7xl mx-auto">
 
                     <div className="mt-10 grid xl:grid-cols-[320px_1fr_320px] gap-8">
 
+                        {/* LEFT */}
                         <div className="space-y-6">
 
                             <div className="bg-white/5 border border-white/10 rounded-[2rem] overflow-hidden backdrop-blur-xl">
@@ -236,7 +238,8 @@ function Business() {
 
                         </div>
 
-                        <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8 backdrop-blur-xl">
+                        {/* CENTER */}
+                        <div className="bg-white/5 border border-white/10 rounded-[2rem] p-6 sm:p-8 backdrop-blur-xl">
 
                             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
 
@@ -248,7 +251,7 @@ function Business() {
 
                                     </div>
 
-                                    <h1 className="mt-6 text-5xl font-semibold tracking-tight">
+                                    <h1 className="mt-6 text-3xl sm:text-5xl font-semibold tracking-tight break-words">
 
                                         {business.name}
 
@@ -282,15 +285,15 @@ function Business() {
 
                             <div className="mt-12">
 
-                                <div className="flex items-center justify-between">
+                                <div className="flex items-center justify-between gap-4">
 
-                                    <h2 className="text-3xl font-semibold">
+                                    <h2 className="text-2xl sm:text-3xl font-semibold">
 
                                         Servicios
 
                                     </h2>
 
-                                    <p className="text-zinc-500">
+                                    <p className="text-zinc-500 text-sm sm:text-base">
 
                                         {services.length} disponibles
 
@@ -307,11 +310,11 @@ function Business() {
                                             className="bg-black/30 border border-white/10 rounded-3xl p-6 hover:border-violet-500/40 transition"
                                         >
 
-                                            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                                            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
 
                                                 <div>
 
-                                                    <h3 className="text-2xl font-medium">
+                                                    <h3 className="text-xl sm:text-2xl font-medium">
 
                                                         {service.name}
 
@@ -325,7 +328,7 @@ function Business() {
 
                                                 </div>
 
-                                                <div className="flex items-center gap-4">
+                                                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
 
                                                     <span className="text-2xl font-semibold text-violet-400">
 
@@ -339,7 +342,7 @@ function Business() {
                                                             onClick={() =>
                                                                 handleReservation(index)
                                                             }
-                                                            className="bg-white text-black hover:bg-zinc-200 px-6 py-3 rounded-2xl transition font-medium"
+                                                            className="bg-white text-black hover:bg-zinc-200 px-6 py-3 rounded-2xl transition font-medium w-full sm:w-auto"
                                                         >
 
                                                             Reservar
@@ -352,7 +355,7 @@ function Business() {
                                                             onClick={() =>
                                                                 navigate("/business-dashboard")
                                                             }
-                                                            className="bg-violet-500 hover:bg-violet-400 text-white px-6 py-3 rounded-2xl transition font-medium"
+                                                            className="bg-violet-500 hover:bg-violet-400 text-white px-6 py-3 rounded-2xl transition font-medium w-full sm:w-auto"
                                                         >
 
                                                             Ver reservas
@@ -365,7 +368,7 @@ function Business() {
                                                             onClick={() =>
                                                                 navigate("/login")
                                                             }
-                                                            className="bg-white/10 border border-white/10 hover:bg-white/20 px-6 py-3 rounded-2xl transition font-medium"
+                                                            className="bg-white/10 border border-white/10 hover:bg-white/20 px-6 py-3 rounded-2xl transition font-medium w-full sm:w-auto"
                                                         >
 
                                                             Iniciar sesión
@@ -388,6 +391,7 @@ function Business() {
 
                         </div>
 
+                        {/* RIGHT */}
                         <div className="space-y-6">
 
                             <div className="bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-[2rem] p-8 shadow-2xl shadow-violet-500/20">
