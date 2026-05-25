@@ -240,7 +240,14 @@ function ReservationsManager({
                                                     "Sin profesional"}
                                             </div>
 
-                                            <div>📅 {reservation.date}</div>
+                                            <div>
+                                                📅{" "}
+                                                {new Date(reservation.date).toLocaleDateString("es-CL", {
+                                                    day: "2-digit",
+                                                    month: "2-digit",
+                                                    year: "numeric",
+                                                })}
+                                            </div>
 
                                             <div>
                                                 🕒{" "}
